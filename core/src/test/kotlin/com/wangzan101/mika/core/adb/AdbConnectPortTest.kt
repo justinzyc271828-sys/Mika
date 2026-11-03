@@ -98,8 +98,8 @@ class AdbConnectPortTest {
 
     @Test
     fun rejectedEverywhereIsUnauthorized() = runTest {
-        // 唯一一个回话的端口试两次都拒,其余是旧端口:钥匙确实不被认,要重新配对;不再扫本机端口
-        val scanner = FakeScanner(mapOf("127.0.0.1" to listOf(41000)), setOf(AdbEndpoint("127.0.0.1", 41000)))
+        // Scan also finds no current endpoint after an advertised endpoint rejects the key.
+        val scanner = FakeScanner(mapOf("127.0.0.1" to listOf(41000)), emptySet())
         val port = AdbConnectPort(
             { 4000 }, { _, _ -> listOf(5000) }, Cache(3000),
             scan = LocalPortScan(scanner, { listOf("127.0.0.1") }),
@@ -111,7 +111,18 @@ class AdbConnectPortTest {
             assertEquals(Reason.UNAUTHORIZED, e.reason)
         }
         assertEquals(listOf(3000, 4000, 4000, 5000), attempts)
-        assertTrue(scanner.swept.isEmpty())
+        assertEquals(listOf("127.0.0.1"), scanner.swept)
+    }
+
+    @Test
+    fun rejectionFromAnOldPortStillAllowsScanningForTheCurrentPort() = runTest {
+        val scanner = FakeScanner(mapOf("127.0.0.1" to listOf(41000)), setOf(AdbEndpoint("127.0.0.1", 41000)))
+        val cache = Cache(4000)
+        val resolver = AdbConnectPort({ null }, { _, _ -> emptyList() }, cache,
+            scan = LocalPortScan(scanner, { listOf("127.0.0.1") }))
+        assertEquals("conn@41000", resolver.connect(opener(41000, unauthorized = 4000)))
+        assertEquals(listOf(4000, 4000, 41000), attempts)
+        assertEquals(41000, cache.port)
     }
 
     @Test

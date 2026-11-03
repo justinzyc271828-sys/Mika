@@ -63,7 +63,9 @@ mika --adb-server-port 5038 connect --device SERIAL --json
 mika --adb-server-port 5038 doctor --device SERIAL --json
 ```
 
-Use the same option on subsequent `devices`, `screen`, `task`, and `ui` commands. This is the computer's ADB server port, separate from the phone's MCP/API port. A phone manager that holds the USB device exclusively may also need to release its device connection.
+Use the same option on subsequent `devices`, `screen`, `task`, and `ui` commands. This is the computer's ADB server port, separate from the phone's MCP/API port. If a phone manager holds the USB device exclusively, paired wireless ADB provides a separate transport. Select its exact device ID from `mika --adb-server-port 5038 devices --json` with `--device`.
+
+If vendor-specific ADB responses also terminate the Google ADB server, use Mika's LAN/private-network mode. The `--url` and `--token-file` route connects directly to Mika's task API and operates independently of the desktop ADB server.
 
 Some devices restart `adbd` when USB is reconnected, which can end a USB-started phone helper. Complete Mika's native wireless-debugging pairing when supported so its phone-side watchdog can restart the helper. Check `helper_available` after recovery.
 

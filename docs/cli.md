@@ -63,7 +63,9 @@ mika --adb-server-port 5038 connect --device SERIAL --json
 mika --adb-server-port 5038 doctor --device SERIAL --json
 ```
 
-后续的 `devices`、`screen`、`task`、`ui` 命令使用同一选项。这里设置的是电脑上的 ADB 服务器端口，与手机的 MCP/API 端口分别配置。如果厂商手机助手独占 USB 设备，还需要让它释放设备连接。
+后续的 `devices`、`screen`、`task`、`ui` 命令使用同一选项。这里设置的是电脑上的 ADB 服务器端口，与手机的 MCP/API 端口分别配置。如果厂商手机助手独占 USB 设备，已配对的无线 ADB 可以提供独立通道。用 `mika --adb-server-port 5038 devices --json` 查看无线设备编号，再通过 `--device` 明确选择。
+
+如果厂商特有的 ADB 响应还会导致 Google ADB 服务退出，使用米卡的局域网或私有网络模式。`--url` 和 `--token-file` 方式直接访问米卡的任务 API，可独立于电脑上的 ADB 服务工作。
 
 部分手机重新连接 USB 时会重启 `adbd`，由 USB 启动的手机助手可能随之退出。设备支持时，完成米卡的原生无线调试配对，可让手机端看门狗重新启动助手。恢复后核验 `helper_available`。
 
