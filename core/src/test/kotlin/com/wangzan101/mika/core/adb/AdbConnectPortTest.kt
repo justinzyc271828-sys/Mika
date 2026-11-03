@@ -165,7 +165,7 @@ class AdbConnectPortTest {
         val swept = mutableListOf<String>()
         var skipped: Set<Int> = emptySet()
         override suspend fun openPorts(host: String, ports: IntRange, skip: Set<Int>, budgetMs: Long): List<Int> {
-            swept += host
+            if (swept.lastOrNull() != host) swept += host
             skipped = skip
             return open[host].orEmpty().filter { it in ports && it !in skip }
         }

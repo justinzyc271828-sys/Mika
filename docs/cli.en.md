@@ -54,6 +54,19 @@ mika --url http://PHONE:8765 --token-file /path/to/private-token-file doctor --j
 
 The private token file contains only the access token. Use the server origin or `/api/v1` URL, not `/mcp`; URL credentials are rejected. The CLI refuses redirects and ignores ambient HTTP proxies. The server retains its private-network restrictions. Plain LAN HTTP does not encrypt traffic; ADB or a trusted private network can be used.
 
+### Use a separate ADB server port
+
+A vendor phone-manager process can occupy the default local ADB server port, 5037. Select a dedicated server port for Mika when the two tools conflict.
+
+```bash
+mika --adb-server-port 5038 connect --device SERIAL --json
+mika --adb-server-port 5038 doctor --device SERIAL --json
+```
+
+Use the same option on subsequent `devices`, `screen`, `task`, and `ui` commands. This is the computer's ADB server port, separate from the phone's MCP/API port. A phone manager that holds the USB device exclusively may also need to release its device connection.
+
+Some devices restart `adbd` when USB is reconnected, which can end a USB-started phone helper. Complete Mika's native wireless-debugging pairing when supported so its phone-side watchdog can restart the helper. Check `helper_available` after recovery.
+
 ## Read-only screen inspection over ADB
 
 ```bash

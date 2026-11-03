@@ -54,6 +54,19 @@ mika --url http://PHONE:8765 --token-file /path/to/private-token-file doctor --j
 
 令牌文件只包含访问令牌,由用户按私有文件保存。URL 使用服务器根地址或 `/api/v1`,不要填 `/mcp`;不允许 URL 内嵌凭据。CLI 不跟随 HTTP 重定向、不使用环境中的 HTTP 代理。服务器沿用私有网络限制;局域网 HTTP 的链路本身不加密,可使用 ADB 或可信私有组网。
 
+### 使用独立的 ADB 服务器端口
+
+厂商手机助手进程可能占用电脑默认的 ADB 服务器端口 5037。两者冲突时，可以为米卡选择独立端口。
+
+```bash
+mika --adb-server-port 5038 connect --device SERIAL --json
+mika --adb-server-port 5038 doctor --device SERIAL --json
+```
+
+后续的 `devices`、`screen`、`task`、`ui` 命令使用同一选项。这里设置的是电脑上的 ADB 服务器端口，与手机的 MCP/API 端口分别配置。如果厂商手机助手独占 USB 设备，还需要让它释放设备连接。
+
+部分手机重新连接 USB 时会重启 `adbd`，由 USB 启动的手机助手可能随之退出。设备支持时，完成米卡的原生无线调试配对，可让手机端看门狗重新启动助手。恢复后核验 `helper_available`。
+
 ## 经 ADB 只读检查屏幕
 
 ```bash

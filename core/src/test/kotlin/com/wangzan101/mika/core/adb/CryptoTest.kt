@@ -110,7 +110,7 @@ class Spake2ConstantsTest {
 
 class Spake2GoldenTest {
     private fun cases(): List<Map<String, String>> {
-        val text = javaClass.getResource("/adb/spake2-vectors.txt")!!.readText()
+        val text = javaClass.getResource("/adb/spake2-vectors.txt")!!.readText().replace("\r\n", "\n")
         return text.split("\n\n").map { block ->
             block.lines().filter { it.isNotBlank() && !it.startsWith("#") }.associate { it.substringBefore('=') to it.substringAfter('=') }
         }.filter { it.isNotEmpty() }

@@ -152,11 +152,13 @@ class Adb:
     _started = set()
     _start_lock = threading.Lock()
 
-    def __init__(self, executable="adb", device=None):
+    def __init__(self, executable="adb", device=None, server_port=5037):
         self.executable, self.device = executable, device
+        self.server_port = server_port
+        self.server_command = [executable] + (["-P", str(server_port)] if server_port != 5037 else [])
 
     def run(self, *args, timeout=20):
-        prefix = [self.executable] + (["-s", self.device] if self.device else [])
+        prefix = self.server_command + (["-s", self.device] if self.device else [])
         try:
             result = subprocess.run(prefix + list(args), stdin=subprocess.DEVNULL, capture_output=True, text=True, encoding="utf-8", timeout=timeout)
         except OSError:
@@ -172,14 +174,15 @@ class Adb:
         # Once per process and executable. Output is discarded so a daemon started here never holds the pipes
         # of a later captured call.
         with Adb._start_lock:
-            if self.executable in Adb._started:
+            endpoint = (self.executable, self.server_port)
+            if endpoint in Adb._started:
                 return
             self._start_server()
-            Adb._started.add(self.executable)
+            Adb._started.add(endpoint)
 
     def _start_server(self):
         try:
-            result = subprocess.run([self.executable, "start-server"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+            result = subprocess.run(self.server_command + ["start-server"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                                     stderr=subprocess.DEVNULL, timeout=60)
         except OSError:
             raise adb_unavailable() from None
@@ -255,7 +258,7 @@ def connection(args, secrets):
         return
     if args.token_file:
         raise CliError("arguments", "--token-file requires --url; ADB reads the current token from the phone.")
-    adb = Adb(args.adb, args.device or os.environ.get("ANDROID_SERIAL"))
+    adb = Adb(args.adb, args.device or os.environ.get("ANDROID_SERIAL"), getattr(args, "adb_server_port", 5037))
     progress(args, "starting ADB server...")
     adb.start_server()
     adb.select()
@@ -336,7 +339,7 @@ def recent_tasks(client, limit):
 def inspect_screen(args):
     if args.url or args.token_file:
         raise CliError("arguments", "screen requires ADB access to the selected phone.")
-    adb = Adb(args.adb, args.device or os.environ.get("ANDROID_SERIAL"))
+    adb = Adb(args.adb, args.device or os.environ.get("ANDROID_SERIAL"), getattr(args, "adb_server_port", 5037))
     adb.start_server()
     adb.select()
     paths = adb.run("shell", "pm", "path", args.package).splitlines()
@@ -373,7 +376,7 @@ def execute(args, secrets):
     if args.command == "devices":
         if args.url or args.token_file:
             raise CliError("arguments", "devices lists ADB devices; it does not use --url or --token-file.")
-        adb = Adb(args.adb)
+        adb = Adb(args.adb, server_port=getattr(args, "adb_server_port", 5037))
         progress(args, "starting ADB server...")
         adb.start_server()
         return {"devices": adb.devices()}
@@ -446,6 +449,8 @@ def parser():
     ]:
         common.add_argument(flag, help=help_text, default=argparse.SUPPRESS)
     common.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help="Compact JSON output, including errors")
+    common.add_argument("--adb-server-port", type=bounded_int(1, 65535), default=argparse.SUPPRESS,
+                        help="Local ADB server port (default: 5037)")
     common.add_argument("--request-timeout", type=request_timeout, default=argparse.SUPPRESS, help="HTTP timeout in seconds (default: 15; bounded waits get at least timeout + 5)")
     p = Parser(prog="mika", description="Delegate tasks to Mika on Android using task API v1.", parents=[common])
     p.add_argument("--version", action="version", version="mika " + VERSION)
@@ -490,7 +495,7 @@ def main(argv=None):
     compact = "--json" in argv
     try:
         args = parser().parse_args(argv)
-        for key, default in {"device": None, "url": None, "token_file": None, "adb": "adb", "request_timeout": 15}.items():
+        for key, default in {"device": None, "url": None, "token_file": None, "adb": "adb", "adb_server_port": 5037, "request_timeout": 15}.items():
             if not hasattr(args, key):
                 setattr(args, key, default)
         if args.command == "ui":

@@ -25,14 +25,14 @@ class LocalPortScanTest {
     private class SlowScanner(val clock: LongArray, val sweepMs: Long, val probeMs: Long, val open: List<Int>) : LocalPortScanner {
         val swept = mutableListOf<String>()
         val probed = mutableListOf<Int>()
-        var range: IntRange? = null
+        val ranges = mutableListOf<IntRange>()
         var skip: Set<Int> = emptySet()
         override suspend fun openPorts(host: String, ports: IntRange, skip: Set<Int>, budgetMs: Long): List<Int> {
             swept += host
-            range = ports
+            ranges += ports
             this.skip = skip
             clock[0] += minOf(sweepMs, budgetMs)
-            return open.filter { it !in skip }
+            return open.filter { it in ports && it !in skip }
         }
         override fun speaksAdbTls(host: String, port: Int, timeoutMs: Int): Boolean {
             probed += port
@@ -45,7 +45,8 @@ class LocalPortScanTest {
     fun timeCapStopsProbingAndSkipsTheNextHost() = runTest {
         val clock = longArrayOf(0)
         val scanner = SlowScanner(clock, sweepMs = 6_000, probeMs = 1_500, open = listOf(40001, 40002, 40003, 40004, 40005))
-        val scan = LocalPortScan(scanner, { listOf("127.0.0.1", "192.0.2.10") }, budgetMs = 10_000, now = { clock[0] })
+        val scan = LocalPortScan(scanner, { listOf("127.0.0.1", "192.0.2.10") },
+            range = { 40000..40005 }, budgetMs = 10_000, now = { clock[0] })
         val r = scan.scan(emptySet())
         assertEquals(listOf("127.0.0.1"), scanner.swept)
         // 6 s 扫描 + 3 次 1.5 s 核对就到 10.5 s,剩下的不再核对
@@ -58,7 +59,8 @@ class LocalPortScanTest {
     fun bothHostsScannedWithinBudgetWhenNothingAnswers() = runTest {
         val clock = longArrayOf(0)
         val scanner = SlowScanner(clock, sweepMs = 2_000, probeMs = 10, open = listOf(40001))
-        val r = LocalPortScan(scanner, { listOf("127.0.0.1", "192.0.2.10", "127.0.0.1") }, now = { clock[0] }).scan(emptySet())
+        val r = LocalPortScan(scanner, { listOf("127.0.0.1", "192.0.2.10", "127.0.0.1") },
+            range = { 40000..40005 }, now = { clock[0] }).scan(emptySet())
         assertEquals(listOf("127.0.0.1", "192.0.2.10"), scanner.swept)
         assertEquals(2, r.open)
         assertEquals(0, r.adb)
@@ -70,7 +72,7 @@ class LocalPortScanTest {
         val scanner = SlowScanner(clock, sweepMs = 1, probeMs = 1, open = listOf(40001, 40002, 40003))
         val scan = LocalPortScan(scanner, { listOf("127.0.0.1") }, range = { 32768..60999 }, ownPorts = { setOf(40002) }, now = { clock[0] })
         scan.scan(setOf(40001))
-        assertEquals(32768..60999, scanner.range)
+        assertEquals((32768..60999).toList(), scanner.ranges.flatMap { it.toList() })
         assertEquals(setOf(40001, 40002), scanner.skip)
         assertEquals(listOf(40003), scanner.probed)
     }

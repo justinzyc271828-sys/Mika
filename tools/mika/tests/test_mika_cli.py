@@ -118,6 +118,8 @@ args = sys.argv[1:]
 with open(os.environ["FAKE_ADB_LOG"], "a") as log:
     log.write(json.dumps(args) + "\n")
 cfg = json.loads(Path(os.environ["FAKE_ADB_CONFIG"]).read_text())
+if args[:1] == ["-P"]:
+    args = args[2:]
 if args[:1] == ["-s"]:
     args = args[2:]
 if args == ["start-server"]:
@@ -464,6 +466,32 @@ else:
             self.assertEqual(1, run.call_count)
             module.Adb("/other/adb").start_server()
             self.assertEqual(2, run.call_count)
+            module.Adb("adb", server_port=5038).start_server()
+            module.Adb("adb", server_port=5038).start_server()
+            self.assertEqual(3, run.call_count)
+            self.assertEqual(["adb", "-P", "5038", "start-server"], run.call_args.args[0])
+
+    def test_alternate_server_port_is_used_for_connect_and_cleanup(self):
+        with api() as server:
+            adb, env, _, calls = self.fake_adb(server)
+            result, body = self.invoke("connect", "--adb", str(adb), "--adb-server-port", "5038", env=env)
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertTrue(body["connected"])
+            self.assertTrue(all(call[:2] == ["-P", "5038"] for call in calls()))
+            self.assertTrue(any("--remove" in call for call in calls()))
+
+    def test_alternate_server_port_is_used_for_device_inventory(self):
+        with api() as server:
+            adb, env, _, calls = self.fake_adb(server)
+            result, body = self.invoke("devices", "--adb", str(adb), "--adb-server-port", "5038", env=env)
+            self.assertEqual(0, result.returncode)
+            self.assertEqual("phone-a", body["devices"][0]["device"])
+            self.assertTrue(all(call[:2] == ["-P", "5038"] for call in calls()))
+
+    def test_invalid_server_port_is_rejected_before_running_adb(self):
+        for value in ("0", "65536", "not-a-port"):
+            result, body = self.invoke("devices", "--adb", "missing-adb", "--adb-server-port", value)
+            self.assertEqual("arguments", body["error"]["code"])
 
     def test_skill_copy_runs_without_original_repository(self):
         copied = self.directory / "installed-skill"

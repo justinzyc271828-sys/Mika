@@ -63,13 +63,19 @@ class LocalPortScan(
         val found = ArrayList<AdbEndpoint>()
         var open = 0
         for (host in hosts().distinct()) {
-            val left = deadline - now()
-            if (left <= 0) break
-            val openPorts = scanner.openPorts(host, ports, excluded, left)
-            open += openPorts.size
-            for (port in openPorts) {
-                if (now() >= deadline) break
-                if (scanner.speaksAdbTls(host, port, probeTimeoutMs)) found += AdbEndpoint(host, port)
+            var first = ports.first
+            while (first <= ports.last) {
+                val left = deadline - now()
+                if (left <= 0) break
+                val last = minOf(first + PORT_BATCH_SIZE - 1, ports.last)
+                // Verify each batch before another sweep can consume the remaining budget.
+                val openPorts = scanner.openPorts(host, first..last, excluded, left)
+                open += openPorts.size
+                for (port in openPorts) {
+                    if (now() >= deadline) break
+                    if (scanner.speaksAdbTls(host, port, probeTimeoutMs)) found += AdbEndpoint(host, port)
+                }
+                first = last + 1
             }
             if (found.isNotEmpty()) break
         }
@@ -77,6 +83,7 @@ class LocalPortScan(
     }
 
     companion object {
+        private const val PORT_BATCH_SIZE = 1_024
         /** 读不到系统的临时端口范围时扫这一段(覆盖各版本常见的设置)。 */
         val FALLBACK_RANGE = 30_000..65_535
 

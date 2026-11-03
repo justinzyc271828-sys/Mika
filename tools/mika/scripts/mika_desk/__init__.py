@@ -57,7 +57,7 @@ class Desk(ThreadingHTTPServer):
 
     def list_devices(self):
         # Caller holds the lock. Adb starts the server at most once per process.
-        adb = Adb(self.args.adb)
+        adb = Adb(self.args.adb, server_port=getattr(self.args, "adb_server_port", 5037))
         adb.start_server()
         return adb.devices()
 
