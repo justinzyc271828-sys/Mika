@@ -54,6 +54,18 @@ mika --url http://PHONE:8765 --token-file /path/to/private-token-file doctor --j
 
 令牌文件只包含访问令牌,由用户按私有文件保存。URL 使用服务器根地址或 `/api/v1`,不要填 `/mcp`;不允许 URL 内嵌凭据。CLI 不跟随 HTTP 重定向、不使用环境中的 HTTP 代理。服务器沿用私有网络限制;局域网 HTTP 的链路本身不加密,可使用 ADB 或可信私有组网。
 
+## 经 ADB 只读检查屏幕
+
+```bash
+mika screen --device SERIAL --json
+# 并排安装的开发版
+mika screen --device SERIAL --package com.wangzan101.mika.dev --json
+```
+
+`screen` 通过 APK 提供的 shell 入口读取各显示屏可访问的窗口和控件树，包括米卡的虚拟屏。每个窗口带有 `display_id`。连接 `UiAutomation` 时使用 `FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES`，米卡的无障碍服务可在读屏期间继续运行。系统自带的 `adb shell uiautomator dump` 使用会压制其他无障碍服务的连接，会让米卡暂时断开。
+
+此命令需要已授权的 ADB 设备，以及包含 `ScreenInspectMain` 的米卡 APK。设备选择规则与 `doctor` 相同，支持正式版和开发版包名。密码框的文字和描述会被省略。返回值含 `node_count` 和 `truncated`，空控件树不能证明应用已准备好。检查只读屏幕，使用独立的观察连接。纯网络连接继续使用高层任务 API。
+
 ## 任务命令
 
 ```bash

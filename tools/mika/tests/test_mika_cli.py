@@ -6,6 +6,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import shlex
 import shutil
 import socket
 import subprocess
@@ -134,6 +135,14 @@ elif args[:2] == ["shell", "cat"]:
     if cfg.get("cat_fails"):
         sys.exit(1)
     print(json.dumps(cfg["info"]))
+elif args[:3] == ["shell", "pm", "path"]:
+    print(cfg.get("apk_path", "package:/data/app/Mika/base.apk"))
+elif args[:1] == ["exec-out"]:
+    if cfg.get("screen_exit"):
+        print(cfg["info"]["token"], file=sys.stderr)
+        sys.exit(cfg["screen_exit"])
+    print(json.dumps(cfg.get("screen", {"status": "ok", "accessibility_services_suppressed": False,
+                                      "windows": [], "node_count": 0, "truncated": False})))
 elif args[:3] == ["shell", "settings", "get"]:
     print(cfg["boot"])
 elif args[:2] == ["forward", "tcp:0"]:
@@ -469,6 +478,60 @@ else:
         self.assertEqual("input", body["error"]["code"])
         result, body = self.invoke("task", "wait", "t1", "--timeout", "51")
         self.assertEqual("arguments", body["error"]["code"])
+
+    def test_screen_inspection_uses_only_the_non_suppressing_entry_point(self):
+        with api() as server:
+            screen = {"status": "ok", "accessibility_services_suppressed": False,
+                      "windows": [{"root": {"text": "Example"}}], "node_count": 1}
+            adb, env, _, calls = self.fake_adb(server, screen=screen)
+            result, body = self.invoke("screen", "--adb", str(adb), "--package", "com.wangzan101.mika.dev", env=env)
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertEqual(1, body["node_count"])
+            self.assertEqual("com.wangzan101.mika.dev", body["package"])
+            self.assertEqual([], server.calls)
+            self.assertTrue(any(c[-3:] == ["pm", "path", "com.wangzan101.mika.dev"] for c in calls()))
+            commands = " ".join(" ".join(c) for c in calls())
+            self.assertIn("ScreenInspectMain", commands)
+            for forbidden in ("uiautomator", "connect-computer.sh", "forward", "input"):
+                self.assertNotIn(forbidden, commands)
+
+    def test_screen_inspection_requires_selected_adb_transport(self):
+        with api() as server:
+            result, body = self.invoke("screen", server=server)
+            self.assertEqual("arguments", body["error"]["code"])
+            self.assertEqual([], server.calls)
+
+    def test_screen_inspection_missing_apk_does_not_fall_back(self):
+        with api() as server:
+            adb, env, _, calls = self.fake_adb(server, apk_path="")
+            result, body = self.invoke("screen", "--adb", str(adb), env=env)
+            self.assertEqual("screen_unavailable", body["error"]["code"])
+            self.assertFalse(any("exec-out" in c for c in calls()))
+
+    def test_screen_inspection_old_apk_failure_hides_process_output(self):
+        with api() as server:
+            adb, env, _, calls = self.fake_adb(server, screen_exit=1)
+            result, body = self.invoke("screen", "--adb", str(adb), env=env)
+            self.assertEqual("screen_unavailable", body["error"]["code"])
+            self.assertIn("update", body["error"]["message"].lower())
+            self.assertEqual(1, sum("exec-out" in c for c in calls()))
+
+    def test_screen_inspection_rejects_a_suppressing_helper(self):
+        with api() as server:
+            adb, env, _, calls = self.fake_adb(server, screen={
+                "status": "ok", "windows": [], "accessibility_services_suppressed": True})
+            result, body = self.invoke("screen", "--adb", str(adb), env=env)
+            self.assertEqual("screen_unavailable", body["error"]["code"])
+            self.assertEqual(1, sum("exec-out" in c for c in calls()))
+
+    def test_screen_inspection_preserves_shell_quoting_for_apk_path(self):
+        with api() as server:
+            apk = "/data/app/Mika's build/base.apk"
+            adb, env, _, calls = self.fake_adb(server, apk_path="package:" + apk)
+            result, body = self.invoke("screen", "--adb", str(adb), env=env)
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            command = next(c[-1] for c in calls() if "exec-out" in c)
+            self.assertIn("CLASSPATH=" + shlex.quote(apk), command)
 
     def test_interrupted_mutation_is_unknown(self):
         spec = importlib.util.spec_from_file_location("mika_cli_test", SCRIPT)
