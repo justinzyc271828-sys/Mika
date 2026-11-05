@@ -479,6 +479,7 @@ class AndroidScreen(
         if (!hasDisplay) return@withContext NO_APP_OPEN
         val found = when (val f = findField(ref, snapshotId)) {
             is Field.Found -> f
+            is Field.XianyuComposer -> return@withContext pasteXianyuText(f.node, text, f.relocatedTo)
             is Field.Missing -> return@withContext when {
                 f.reason != NO_FOCUS -> ActionResult.Failed(f.reason)
                 // 屏上什么都没拿着输入焦点、也没弹输入法:没有框接得住粘贴,不去粘(粘了界面别处一动就会被当成「可能打进去了」)
@@ -562,6 +563,7 @@ class AndroidScreen(
         if (!hasDisplay) return@withContext NO_APP_OPEN
         val found = when (val f = findField(ref, snapshotId, tapToFocus = false)) {
             is Field.Found -> f
+            is Field.XianyuComposer -> return@withContext ActionResult.Failed("not_editable")
             is Field.Missing -> return@withContext when {
                 f.reason != NO_FOCUS -> ActionResult.Failed(f.reason)
                 !somethingHoldsInputFocus() -> ActionResult.Failed(NO_FOCUS)
@@ -581,6 +583,12 @@ class AndroidScreen(
      */
     override suspend fun typeAt(x: Int, y: Int, text: String): ActionResult = withContext(Dispatchers.IO) {
         if (!hasDisplay) return@withContext NO_APP_OPEN
+        if (ScreenReader.topPackage(windows()) == XianyuChatInput.PACKAGE) {
+            val composer = xianyuComposer(read())?.node
+            if (composer != null && Rect().also(composer::getBoundsInScreen).contains(x, y)) {
+                return@withContext pasteXianyuText(composer, text)
+            }
+        }
         val tapped = verified { tapAt(x, y) }
         if (tapped !is ActionResult.Ok) return@withContext tapped
         // 点了开出了别的 App(开到用户主屏上又挪回来的也是):不打字,照实报这一下点的结果
@@ -635,23 +643,87 @@ class AndroidScreen(
      * 剪贴板换成 [text]、全选、Ctrl+V,等 App 读走(画面变了)或超时再还原。返回 null:剪贴板不能安全使用(读不到用户原来的内容),
      * 什么都没动;false:粘贴键发不出去。剪贴板的保存、还原、加密留底和 [inputText] 同一套。
      */
-    private fun pasteUnseen(text: String, beforeFrame: IntArray?): Boolean? {
+    private fun pasteUnseen(text: String, beforeFrame: IntArray?): Boolean? = withClipboardText(text) {
+        ctrlKey(KeyEvent.KEYCODE_A)
+        if (!ctrlKey(KeyEvent.KEYCODE_V)) return@withClipboardText false
+        // App 处理粘贴键时就读剪贴板:画面变了再还原,最多等一会儿
+        val deadline = SystemClock.uptimeMillis() + PASTE_WAIT_MS
+        while (SystemClock.uptimeMillis() < deadline && !FrameMath.differs(beforeFrame, frameSignature())) Thread.sleep(POLL_MS)
+        true
+    }
+
+    private inline fun withClipboardText(text: String, action: () -> Boolean): Boolean? {
         clipLock.lock()
         clipHeld(true)
         try {
             if (runCatching { shell.setClipText(text) }.getOrDefault(ShellService.CLIP_FAILED) != ShellService.CLIP_SET) return null
             runCatching { shell.savedClipText() }.getOrNull()?.let { clipSaved(it, text) }
-            ctrlKey(KeyEvent.KEYCODE_A)
-            if (!ctrlKey(KeyEvent.KEYCODE_V)) return false
-            // App 处理粘贴键时就读剪贴板:画面变了再还原,最多等一会儿
-            val deadline = SystemClock.uptimeMillis() + PASTE_WAIT_MS
-            while (SystemClock.uptimeMillis() < deadline && !FrameMath.differs(beforeFrame, frameSignature())) Thread.sleep(POLL_MS)
-            return true
+            return action()
         } finally {
             runCatching { shell.restoreClip() }
             clipHeld(false)
             clipLock.unlock()
         }
+    }
+
+    // Xianyu's Flutter composer exposes a View and the native paste toolbar,
+    // even when it exposes no editable node and ignores the shortcut.
+    private suspend fun pasteXianyuText(node: AccessibilityNodeInfo, text: String, relocatedTo: String? = null): ActionResult {
+        val before = read()
+        if (handedOver() || xianyuComposer(before)?.node != node || before.entries.any { XianyuChatInput.isPasteButton(it.element) }) {
+            return ActionResult.Failed("ref_expired")
+        }
+        if (xianyuDraft(node) != null) {
+            return ActionResult.Failed("not_editable", "The Xianyu chat already has a draft. Verify it before editing.")
+        }
+        var exact = false
+        val pasted = withClipboardText(text) {
+            val current = xianyuComposer(read())?.node
+            if (handedOver() || current == null || current != node || xianyuDraft(current) != null) return@withClipboardText false
+            val bounds = Rect().also(current::getBoundsInScreen)
+            val x = bounds.centerX().toDouble()
+            val y = bounds.centerY().toDouble()
+            if (!injectStroke(listOf(GesturePacing.Point(x, y, 0), GesturePacing.Point(x, y, 900)))) return@withClipboardText false
+            val paste = waitForXianyu { screen, composer ->
+                if (xianyuDraft(composer.node) != null) null else screen.entries.singleOrNull { entry ->
+                    XianyuChatInput.isPasteFor(entry.element, composer.element, screenHeight)
+                }
+            } ?: return@withClipboardText false
+            if (handedOver() || !paste.node.refresh() || !paste.node.isVisibleToUser || !paste.node.isEnabled) return@withClipboardText false
+            val target = Rect().also(paste.node::getBoundsInScreen)
+            if (!paste.node.performAction(AccessibilityNodeInfo.ACTION_CLICK) &&
+                !shell.injectTap(displayId, target.centerX(), target.centerY())) return@withClipboardText false
+            exact = waitForXianyu { _, composer ->
+                xianyuDraft(composer.node)?.takeIf { it.text?.toString() == text || it.contentDescription?.toString() == text }
+            } != null
+            true
+        }
+        return when (pasted) {
+            null -> ActionResult.Failed("paste_unavailable", HINT_PASTE_BLOCKED)
+            false -> ActionResult.Failed("action_failed", "The Xianyu chat paste menu was not safely actionable.")
+            true -> ok(changed = true.takeIf { exact }, relocatedTo = relocatedTo, verification = if (exact) Verification.MATCH else Verification.UNKNOWN)
+        }
+    }
+
+    private fun xianyuComposer(screen: ScreenRead): NodeEntry? = screen.takeIf { it.topPackage == XianyuChatInput.PACKAGE }
+        ?.entries?.singleOrNull {
+            it.node.isEnabled && XianyuChatInput.isComposer(it.node.packageName?.toString(), it.element)
+        }
+
+    private fun xianyuDraft(node: AccessibilityNodeInfo): AccessibilityNodeInfo? = descendant(node) {
+        it !== node && it.isVisibleToUser && XianyuChatInput.isDraftLabel(ScreenReader.ownLabel(it))
+    }
+
+    private fun <T : Any> waitForXianyu(find: (ScreenRead, NodeEntry) -> T?): T? {
+        val deadline = SystemClock.uptimeMillis() + PASTE_WAIT_MS
+        do {
+            if (handedOver()) return null
+            val screen = read()
+            if (screen.topPackage != XianyuChatInput.PACKAGE) return null
+            xianyuComposer(screen)?.let { composer -> find(screen, composer)?.let { return it } }
+            Thread.sleep(POLL_MS)
+        } while (SystemClock.uptimeMillis() < deadline)
+        return null
     }
 
     /** 和 [typeUnseen] 同样的前提;全选后按删除键,没弹输入法而界面一点没变时请模型先点输入框([UnseenField.cleared])。 */
@@ -1638,6 +1710,7 @@ class AndroidScreen(
     private sealed interface Field {
         /** [tapped]:给的元素本身不是输入框,点了它之后才出现(或聚焦了)真正的输入框。 */
         class Found(val node: AccessibilityNodeInfo, val tapped: Boolean = false, val relocatedTo: String? = null) : Field
+        class XianyuComposer(val node: AccessibilityNodeInfo, val relocatedTo: String?) : Field
         class Missing(val reason: String) : Field
     }
 
@@ -1651,6 +1724,9 @@ class AndroidScreen(
             val (node, relocatedTo) = resolve(ref, snapshotId) ?: return Field.Missing("ref_expired")
             val editable = if (node.isEditable) node else descendant(node) { it.isEditable }
             if (editable != null) return Field.Found(editable, relocatedTo = relocatedTo)
+            if (tapToFocus && node.packageName?.toString() == XianyuChatInput.PACKAGE && xianyuComposer(read())?.node == node) {
+                return Field.XianyuComposer(node, relocatedTo)
+            }
             if (!tapToFocus || !looksLikeInputEntry(node)) return Field.Missing("not_editable")
             val focusedBefore = focusedEditable()
             val clicked = withEventClock { clock ->
@@ -1782,24 +1858,16 @@ class AndroidScreen(
             selectAll()
             return before.isEmpty() || shell.injectKey(displayId, KeyEvent.KEYCODE_DEL)
         }
-        clipLock.lock()
-        clipHeld(true)
-        try {
-            if (runCatching { shell.setClipText(text) }.getOrDefault(ShellService.CLIP_FAILED) != ShellService.CLIP_SET) return null
-            runCatching { shell.savedClipText() }.getOrNull()?.let { clipSaved(it, text) }
+        return withClipboardText(text) {
             selectAll()
-            if (!node.performAction(AccessibilityNodeInfo.ACTION_PASTE)) return false
+            if (!node.performAction(AccessibilityNodeInfo.ACTION_PASTE)) return@withClipboardText false
             // App 是异步去读剪贴板的:等字变了再还原,最多等一会儿
             val deadline = SystemClock.uptimeMillis() + PASTE_WAIT_MS
             while (SystemClock.uptimeMillis() < deadline) {
                 if (node.refresh() && node.text?.toString().orEmpty() != before) break
                 Thread.sleep(POLL_MS)
             }
-            return true
-        } finally {
-            runCatching { shell.restoreClip() }
-            clipHeld(false)
-            clipLock.unlock()
+            true
         }
     }
 
