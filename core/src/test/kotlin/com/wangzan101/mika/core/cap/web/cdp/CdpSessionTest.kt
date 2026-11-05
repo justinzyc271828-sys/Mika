@@ -1,6 +1,7 @@
 package com.wangzan101.mika.core.cap.web.cdp
 
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.filter
@@ -8,6 +9,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -113,9 +115,12 @@ class CdpSessionTest {
         val server = FakeDevTools()
         server.onMessage = { c, m -> c.reply(m, buildJsonObject { put("blob", "y".repeat(100_000)) }) }
         val s = session(server, maxMessageBytes = 50_000)
-        val e = assertFails<CdpConnectionClosedException> { s.send("Big.call") }
-        assertTrue(e.message, e.message!!.contains("larger than"))
-        assertTrue(s.closed.value)
+        // 允许等待响应的协程在收到断连异常时立即恢复。
+        withContext(Dispatchers.Unconfined) {
+            val e = assertFails<CdpConnectionClosedException> { s.send("Big.call") }
+            assertTrue(e.message, e.message!!.contains("larger than"))
+            assertTrue("Session must be closed when a pending call reports disconnect", s.closed.value)
+        }
     }
 
     @Test

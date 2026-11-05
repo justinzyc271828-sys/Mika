@@ -171,12 +171,13 @@ class CdpSession(
             if (closeError != null) return
             closeError = error
         }
+        // 等待响应的调用可能立即恢复,所以先公布关闭状态。
+        _closed.value = true
         for (id in pending.keys.toList()) {
             pending.remove(id)?.result?.completeExceptionally(
                 CdpConnectionClosedException(error.message ?: "closed", error.cause),
             )
         }
-        _closed.value = true
     }
 
     companion object {
