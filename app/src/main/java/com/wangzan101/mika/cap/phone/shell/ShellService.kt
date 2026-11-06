@@ -1096,7 +1096,7 @@ class ShellService(
         return injectPair(down, up, displayId) { exec("input", "-d", "$displayId", "keyevent", "$keyCode") == 0 }
     }
 
-    /** Ctrl+A / Ctrl+V:修饰键写在按键事件的 metaState 里(App 按它认组合键),只放行这两个,只发到 Mika 自己的屏(粘贴不能落到用户的屏上)。 */
+    /** Ctrl+A / Ctrl+V on an owned display. Send the modifier edges as well as the key's meta state. */
     override fun injectCtrlKey(displayId: Int, keyCode: Int): Boolean {
         if (!ownDisplay(displayId)) return false
         if (keyCode != KeyEvent.KEYCODE_A && keyCode != KeyEvent.KEYCODE_V) {
@@ -1105,9 +1105,21 @@ class ShellService(
         }
         val now = SystemClock.uptimeMillis()
         val meta = KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON
-        val down = KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0, meta, VIRTUAL_KEYBOARD, 0, 0, InputDevice.SOURCE_KEYBOARD)
-        val up = KeyEvent.changeAction(down, KeyEvent.ACTION_UP)
-        return injectPair(down, up, displayId) { false }
+        fun event(code: Int, action: Int, modifiers: Int) = KeyEvent(
+            now, SystemClock.uptimeMillis(), action, code, 0, modifiers,
+            VIRTUAL_KEYBOARD, 0, 0, InputDevice.SOURCE_KEYBOARD,
+        )
+        val released: Boolean
+        val sent = try {
+            if (!inject(event(KeyEvent.KEYCODE_CTRL_LEFT, KeyEvent.ACTION_DOWN, 0), displayId)) return false
+            val down = event(keyCode, KeyEvent.ACTION_DOWN, meta)
+            val up = event(keyCode, KeyEvent.ACTION_UP, meta)
+            injectPair(down, up, displayId) { false }
+        } finally {
+            val up = event(KeyEvent.KEYCODE_CTRL_LEFT, KeyEvent.ACTION_UP, 0)
+            released = ownDisplay(displayId) && (inject(up, displayId) || inject(up, displayId))
+        }
+        return sent && released
     }
 
     @SuppressLint("DiscouragedPrivateApi")

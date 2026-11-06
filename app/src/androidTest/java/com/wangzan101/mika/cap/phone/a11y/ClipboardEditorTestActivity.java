@@ -48,14 +48,26 @@ public class ClipboardEditorTestActivity extends Activity {
 
     private TextView addEditor(LinearLayout content, String label, boolean usesShortcut) {
         TextView editor = new TextView(this) {
+            private boolean controlDown;
+
             @Override public boolean onKeyDown(int code, KeyEvent event) {
+                if (code == KeyEvent.KEYCODE_CTRL_LEFT) {
+                    controlDown = true;
+                    return true;
+                }
                 if (!event.isCtrlPressed()) return super.onKeyDown(code, event);
-                if (usesShortcut && code == KeyEvent.KEYCODE_A) {
+                if (usesShortcut && controlDown && code == KeyEvent.KEYCODE_A) {
                     setBackgroundColor(Color.BLACK);
                     setTextColor(Color.WHITE);
-                } else if (usesShortcut && code == KeyEvent.KEYCODE_V) {
+                } else if (usesShortcut && controlDown && code == KeyEvent.KEYCODE_V) {
                     postDelayed(() -> readClip(this, label), 300);
                 }
+                return true;
+            }
+
+            @Override public boolean onKeyUp(int code, KeyEvent event) {
+                if (code != KeyEvent.KEYCODE_CTRL_LEFT) return super.onKeyUp(code, event);
+                controlDown = false;
                 return true;
             }
         };
