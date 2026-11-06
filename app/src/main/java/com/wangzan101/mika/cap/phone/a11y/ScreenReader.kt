@@ -63,6 +63,7 @@ internal object ScreenReader {
         fun visit(n: AccessibilityNodeInfo, depth: Int, inList: Boolean): List<UiTreeNode> {
             if (depth > MAX_DEPTH) return emptyList()
             val visible = n.isVisibleToUser
+            val editable = visible && canSetText(n)
             var ref: String? = null
             var clippedBounds = listOf(0, 0, 0, 0)
             if (visible) {
@@ -76,7 +77,7 @@ internal object ScreenReader {
                 clippedBounds = listOf(normalize(rect.left, width), normalize(rect.top, height),
                     normalize(rect.right, width), normalize(rect.bottom, height))
                 val usable = rect.width() >= MIN_SIZE && rect.height() >= MIN_SIZE
-                val interactive = n.isClickable || n.isEditable || n.isScrollable
+                val interactive = n.isClickable || editable || n.isScrollable
                 if (usable && (own != null || interactive)) {
                     val label = labelOf(n, own)
                     val role = roleOf(n)
@@ -92,14 +93,14 @@ internal object ScreenReader {
                                 normalize(rect.right, width), normalize(rect.bottom, height),
                             ),
                             // 输入框总带上资源 ID:回车前要靠它认出搜索框(名字常常只是推荐词)
-                            resourceId = if (label.isEmpty() || n.isEditable) readableResourceId(rid) else null,
-                            clickable = n.isClickable, editable = n.isEditable, scrollable = n.isScrollable,
+                            resourceId = if (label.isEmpty() || editable) readableResourceId(rid) else null,
+                            clickable = n.isClickable, editable = editable, scrollable = n.isScrollable,
                             hint = own != null && showingHint(n),
                             focused = n.isFocused,
                             secret = n.isPassword,
-                            placeholder = if (n.isEditable) n.hintText?.toString()?.trim()?.ifEmpty { null } else null,
+                            placeholder = if (editable) n.hintText?.toString()?.trim()?.ifEmpty { null } else null,
                             // 安卓的搜索框控件(SearchView 里的输入框)按类名认
-                            searchField = n.isEditable && n.className?.toString()?.contains("Search", ignoreCase = true) == true,
+                            searchField = editable && n.className?.toString()?.contains("Search", ignoreCase = true) == true,
                             states = uiStates(n),
                         )
                         val locator = ElementLocator(role, label, rid, rect.centerX(), rect.centerY(), lastLabel, element.hint, inList)
@@ -119,7 +120,7 @@ internal object ScreenReader {
                 description = n.contentDescription?.toString()?.takeUnless { n.isPassword || it.isBlank() },
                 hintText = n.hintText?.toString()?.takeUnless { it.isBlank() },
                 resourceId = n.viewIdResourceName,
-                clickable = n.isClickable, editable = n.isEditable, scrollable = n.isScrollable,
+                clickable = n.isClickable, editable = editable, scrollable = n.isScrollable,
                 checkable = n.isCheckable, checked = n.isChecked, selected = n.isSelected,
                 enabled = n.isEnabled, focused = n.isFocused, secret = n.isPassword,
                 wheel = isWheel(n),
@@ -265,6 +266,10 @@ internal object ScreenReader {
     /** 输入框正在显示的提示语;没在显示提示语时为 null。 */
     fun placeholderOf(n: AccessibilityNodeInfo): String? =
         if (showingHint(n)) n.text?.toString()?.trim()?.ifEmpty { null } ?: n.hintText?.toString()?.trim() else null
+
+    /** Some accessibility providers expose the action without setting the editable flag. */
+    fun canSetText(n: AccessibilityNodeInfo): Boolean =
+        n.isEditable || n.actionList.any { it.id == AccessibilityNodeInfo.ACTION_SET_TEXT }
 
     /**
      * 输入框里用户可见的实际文字;显示的是提示语时为空串,密码框读不出时为 null。

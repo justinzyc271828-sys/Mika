@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.content.res.Resources
 import android.graphics.Path
 import android.graphics.Rect
 import android.os.Bundle
@@ -15,6 +16,7 @@ import android.os.SystemClock
 import android.util.Log
 import android.view.Display
 import android.view.KeyEvent
+import android.view.ViewConfiguration
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.view.accessibility.AccessibilityWindowInfo
@@ -60,7 +62,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.conflate
@@ -508,6 +512,7 @@ class AndroidScreen(
         val found = when (val f = findField(ref, snapshotId)) {
             is Field.Found -> f
             is Field.Missing -> return@withContext when {
+                f.reason == "not_editable" -> ActionResult.Failed(f.reason, "If this is a visible input box, give its point instead.")
                 f.reason != NO_FOCUS -> ActionResult.Failed(f.reason)
                 // 屏上什么都没拿着输入焦点、也没弹输入法:没有框接得住粘贴,不去粘(粘了界面别处一动就会被当成「可能打进去了」)
                 !somethingHoldsInputFocus() -> ActionResult.Failed(NO_FOCUS)
@@ -609,13 +614,19 @@ class AndroidScreen(
      */
     override suspend fun typeAt(x: Int, y: Int, text: String): ActionResult = withContext(Dispatchers.IO) {
         if (!hasDisplay) return@withContext NO_APP_OPEN
+        val anchor = contextPasteAnchor(x, y)
+        val keyboardBefore = imeBounds() != null
         val tapped = verified { tapAt(x, y) }
         if (tapped !is ActionResult.Ok) return@withContext tapped
         // 点了开出了别的 App(开到用户主屏上又挪回来的也是):不打字,照实报这一下点的结果
         if (tapped.opened != null) return@withContext tapped
         tapped.appSwitched?.takeIf { !tapped.switchedByTarget }?.let { return@withContext UnseenField.tapSwitched(it) }
         if (focusedEditable() != null) return@withContext typeText(null, null, text)
-        typeUnseen(text, atPoint = true)
+        val typed = typeUnseen(text, atPoint = true)
+        if (typed is ActionResult.Failed && typed.reason == UnseenField.POINT_NOT_TYPED &&
+            anchor != null && tapped.appSwitched == null && (tapped.changed == false || !keyboardBefore && imeBounds() != null)) {
+            pasteFromContextMenu(anchor, text) ?: typed
+        } else typed
     }
 
     /** 清空这一点上的输入框,做法同 [typeAt]。 */
@@ -663,22 +674,115 @@ class AndroidScreen(
      * 剪贴板换成 [text]、全选、Ctrl+V,等 App 读走(画面变了)或超时再还原。返回 null:剪贴板不能安全使用(读不到用户原来的内容),
      * 什么都没动;false:粘贴键发不出去。剪贴板的保存、还原、加密留底和 [inputText] 同一套。
      */
-    private fun pasteUnseen(text: String, beforeFrame: IntArray?): Boolean? {
-        clipLock.lock()
-        clipHeld(true)
-        try {
-            if (runCatching { shell.setClipText(text) }.getOrDefault(ShellService.CLIP_FAILED) != ShellService.CLIP_SET) return null
-            runCatching { shell.savedClipText() }.getOrNull()?.let { clipSaved(it, text) }
+    private fun pasteUnseen(text: String, beforeFrame: IntArray?): Boolean? =
+        withClipboardText(text) {
             ctrlKey(KeyEvent.KEYCODE_A)
-            if (!ctrlKey(KeyEvent.KEYCODE_V)) return false
+            val focus = ScreenReader.contentWindows(windows()).firstOrNull { it.isFocused }?.root
+                ?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)?.takeIf { it.isVisibleToUser && it.isEnabled && !it.isPassword }
+            val pasted = focus?.actionList?.any { it.id == AccessibilityNodeInfo.ACTION_PASTE } == true &&
+                focus.performAction(AccessibilityNodeInfo.ACTION_PASTE)
+            if (!pasted && !ctrlKey(KeyEvent.KEYCODE_V)) return@withClipboardText false
             // App 处理粘贴键时就读剪贴板:画面变了再还原,最多等一会儿
             val deadline = SystemClock.uptimeMillis() + PASTE_WAIT_MS
             while (SystemClock.uptimeMillis() < deadline && !FrameMath.differs(beforeFrame, frameSignature())) Thread.sleep(POLL_MS)
-            return true
-        } finally {
-            runCatching { shell.restoreClip() }
-            clipHeld(false)
-            clipLock.unlock()
+            true
+        }
+
+    /** Retain the actual node hit by an explicit point, even if its provider does not expose an editor. */
+    private fun contextPasteAnchor(x: Int, y: Int): AccessibilityNodeInfo? {
+        if (handedOver() || imeBounds()?.contains(x, y) == true) return null
+        val window = ScreenReader.contentWindows(windows()).firstOrNull()
+            ?.takeIf { it.type == AccessibilityWindowInfo.TYPE_APPLICATION } ?: return null
+        val entries = ScreenReader.read(listOf(window), screenWidth, screenHeight).entries
+        val hit = entries.mapNotNull { entry ->
+            val bounds = Rect().also(entry.node::getBoundsInScreen)
+            if (bounds.contains(x, y)) entry to bounds.width().toLong() * bounds.height() else null
+        }.minByOrNull { it.second }?.first ?: return null
+        return hit.node.takeIf {
+            it.isEnabled && !it.isPassword && !it.isLongClickable && !hit.locator.inList &&
+                !hit.element.role.endsWith("Button")
+        }
+    }
+
+    /** The editor must still be present, with only its own app's windows above it. */
+    private fun contextPasteScope(
+        anchor: AccessibilityNodeInfo, original: FieldShape,
+    ): Pair<Rect, List<AccessibilityWindowInfo>>? {
+        if (!hasDisplay || handedOver() || !anchor.refresh() || !anchor.isEnabled || !anchor.isVisibleToUser ||
+            anchor.isPassword || anchor.textSelectionStart != anchor.textSelectionEnd || anchor.textSelectionEnd > 0) return null
+        val current = FieldShape.of(anchor)
+        val bounds = current.rect
+        val ime = imeBounds()
+        // Showing the keyboard can move the editor. Keep its node and window identity.
+        if (current.cls != original.cls || current.rid != original.rid ||
+            bounds.width() != original.rect.width() || bounds.height() != original.rect.height() ||
+            (bounds != original.rect && ime == null) || ime?.contains(bounds.centerX(), bounds.centerY()) == true ||
+            !Rect(0, 0, screenWidth, screenHeight).contains(bounds)) return null
+        val pkg = anchor.packageName?.toString() ?: return null
+        val content = ScreenReader.contentWindows(windows())
+        val index = content.indexOfFirst { it.id == anchor.windowId }
+        if (index < 0) return null
+        val scoped = content.take(index + 1)
+        if (scoped.any { it.type != AccessibilityWindowInfo.TYPE_APPLICATION || it.root?.packageName?.toString() != pkg }) return null
+        return bounds to scoped
+    }
+
+    /** Try a newly opened, local edit menu only after the shortcut had a confirmed no-effect result. */
+    private suspend fun pasteFromContextMenu(anchor: AccessibilityNodeInfo, text: String): ActionResult? {
+        if (!anchor.refresh()) return null
+        val original = FieldShape.of(anchor)
+        if (contextPasteScope(anchor, original) == null) return null
+        val menu = ContextEditMenu(Resources.getSystem().getString(android.R.string.paste))
+        fun isPaste(node: AccessibilityNodeInfo): Boolean {
+            val label = node.text?.toString() ?: node.contentDescription?.toString()
+            return menu.isPaste(node.viewIdResourceName, node.className?.toString()?.substringAfterLast('.'), label)
+        }
+        fun controls(scoped: List<AccessibilityWindowInfo>) =
+            ScreenReader.read(scoped, screenWidth, screenHeight).entries.filter { it.node.isClickable && it.node.isEnabled }
+        fun near(bounds: Rect, controls: List<NodeEntry>): List<AccessibilityNodeInfo> {
+            val margin = min(screenWidth, screenHeight) / 5
+            val vicinity = Rect(bounds).apply { inset(-margin, -margin) }
+            val ime = imeBounds()
+            return controls.filter { entry ->
+                val x = entry.element.centerX
+                val y = entry.element.centerY
+                vicinity.contains(x, y) && ime?.contains(x, y) != true
+            }.map { it.node }
+        }
+        val context = currentCoroutineContext()
+        val pasted = withClipboardText(text) {
+            context.ensureActive()
+            val (bounds, scoped) = contextPasteScope(anchor, original) ?: return@withClipboardText false
+            val before = controls(scoped)
+            if (near(bounds, before).any(::isPaste)) return@withClipboardText false
+            val existing = before.map { it.node }.toSet()
+            val hold = ViewConfiguration.getLongPressTimeout().toLong() + 2 * POLL_MS
+            val point = GesturePacing.Point(bounds.centerX().toDouble(), bounds.centerY().toDouble(), 0)
+            if (!injectStroke(listOf(point, point.copy(t = hold)))) return@withClipboardText false
+            val deadline = SystemClock.uptimeMillis() + PASTE_WAIT_MS
+            var previous: AccessibilityNodeInfo? = null
+            do {
+                context.ensureActive()
+                val (currentBounds, currentWindows) = contextPasteScope(anchor, original) ?: return@withClipboardText false
+                val paste = menu.freshPaste(existing, near(currentBounds, controls(currentWindows)), ::isPaste)
+                if (paste != null && paste == previous) {
+                    if (!paste.refresh() || !paste.isVisibleToUser || !paste.isEnabled || !paste.isClickable || !isPaste(paste) || handedOver()) {
+                        return@withClipboardText false
+                    }
+                    context.ensureActive()
+                    if (!paste.performAction(AccessibilityNodeInfo.ACTION_CLICK)) return@withClipboardText false
+                    Thread.sleep(PASTE_WAIT_MS)
+                    return@withClipboardText true
+                }
+                previous = paste
+                Thread.sleep(POLL_MS)
+            } while (SystemClock.uptimeMillis() < deadline)
+            false
+        }
+        return when (pasted) {
+            null -> ActionResult.Failed("paste_unavailable", HINT_PASTE_BLOCKED)
+            false -> null
+            true -> ok(verification = Verification.UNKNOWN, hint = "Used the editor's Paste menu.")
         }
     }
 
@@ -696,10 +800,13 @@ class AndroidScreen(
 
     /** 这块屏上输入法窗口的范围(0–999 的 [l,t,r,b]);没弹输入法为 null。弹着时它上面的字不算屏上的字。 */
     private fun imeBox(): List<Int>? {
-        val w = windows().firstOrNull { it.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD } ?: return null
-        val r = android.graphics.Rect().also(w::getBoundsInScreen)
-        if (r.isEmpty) return null
+        val r = imeBounds() ?: return null
         return listOf(normalize(r.left, screenWidth), normalize(r.top, screenHeight), normalize(r.right, screenWidth), normalize(r.bottom, screenHeight))
+    }
+
+    private fun imeBounds(): Rect? {
+        val w = windows().firstOrNull { it.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD } ?: return null
+        return Rect().also(w::getBoundsInScreen).takeUnless { it.isEmpty }
     }
 
     /**
@@ -1713,7 +1820,7 @@ class AndroidScreen(
     private suspend fun findField(ref: String?, snapshotId: String?, tapToFocus: Boolean = true): Field {
         if (ref != null && snapshotId != null) {
             val (node, relocatedTo) = resolve(ref, snapshotId) ?: return Field.Missing("ref_expired")
-            val editable = if (node.isEditable) node else descendant(node) { it.isEditable }
+            val editable = if (ScreenReader.canSetText(node)) node else descendant(node, ScreenReader::canSetText)
             if (editable != null) return Field.Found(editable, relocatedTo = relocatedTo)
             if (!tapToFocus || !looksLikeInputEntry(node)) return Field.Missing("not_editable")
             val focusedBefore = focusedEditable()
@@ -1761,14 +1868,17 @@ class AndroidScreen(
      * 都没有时按键没有框可去:树里看不到的输入框也只有拿着焦点才收得到粘贴。
      */
     private fun somethingHoldsInputFocus(): Boolean =
-        imeBox() != null || ScreenReader.contentWindows(windows()).any { it.root?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT) != null }
+        imeBounds() != null || focusedInput() != null
+
+    private fun focusedInput(): AccessibilityNodeInfo? =
+        ScreenReader.contentWindows(windows()).firstNotNullOfOrNull { it.root?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT) }
 
     /** 这块屏上拿着输入焦点的可编辑框;焦点落在容器(如网页)上时找它里面聚焦的可编辑节点。 */
     private fun focusedEditable(): AccessibilityNodeInfo? {
         for (w in ScreenReader.contentWindows(windows())) {
             val focused = w.root?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT) ?: continue
-            if (focused.isEditable) return focused
-            descendant(focused) { it.isFocused && it.isEditable }?.let { return it }
+            if (ScreenReader.canSetText(focused)) return focused
+            descendant(focused) { it.isFocused && ScreenReader.canSetText(it) }?.let { return it }
         }
         return null
     }
@@ -1846,24 +1956,34 @@ class AndroidScreen(
             selectAll()
             return before.isEmpty() || shell.injectKey(displayId, KeyEvent.KEYCODE_DEL)
         }
-        clipLock.lock()
-        clipHeld(true)
-        try {
-            if (runCatching { shell.setClipText(text) }.getOrDefault(ShellService.CLIP_FAILED) != ShellService.CLIP_SET) return null
-            runCatching { shell.savedClipText() }.getOrNull()?.let { clipSaved(it, text) }
+        return withClipboardText(text) {
             selectAll()
-            if (!node.performAction(AccessibilityNodeInfo.ACTION_PASTE)) return false
+            if (!node.performAction(AccessibilityNodeInfo.ACTION_PASTE)) return@withClipboardText false
             // App 是异步去读剪贴板的:等字变了再还原,最多等一会儿
             val deadline = SystemClock.uptimeMillis() + PASTE_WAIT_MS
             while (SystemClock.uptimeMillis() < deadline) {
                 if (node.refresh() && node.text?.toString().orEmpty() != before) break
                 Thread.sleep(POLL_MS)
             }
-            return true
+            true
+        }
+    }
+
+    /** Run synchronously while holding the shared, thread-owned clipboard lock. */
+    private fun withClipboardText(text: String, action: () -> Boolean): Boolean? {
+        clipLock.lock()
+        try {
+            clipHeld(true)
+            if (runCatching { shell.setClipText(text) }.getOrDefault(ShellService.CLIP_FAILED) != ShellService.CLIP_SET) return null
+            runCatching { shell.savedClipText() }.getOrNull()?.let { clipSaved(it, text) }
+            return action()
         } finally {
             runCatching { shell.restoreClip() }
-            clipHeld(false)
-            clipLock.unlock()
+            try {
+                clipHeld(false)
+            } finally {
+                clipLock.unlock()
+            }
         }
     }
 
