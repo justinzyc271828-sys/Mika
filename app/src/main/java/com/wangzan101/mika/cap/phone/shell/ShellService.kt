@@ -33,6 +33,7 @@ import android.util.Log
 import android.view.Display
 import android.view.InputDevice
 import android.view.InputEvent
+import android.view.KeyCharacterMap
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.Surface
@@ -1107,6 +1108,41 @@ class ShellService(
         val down = KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0, meta, VIRTUAL_KEYBOARD, 0, 0, InputDevice.SOURCE_KEYBOARD)
         val up = KeyEvent.changeAction(down, KeyEvent.ACTION_UP)
         return injectPair(down, up, displayId) { false }
+    }
+
+    @SuppressLint("DiscouragedPrivateApi")
+    override fun injectAsciiText(displayId: Int, taskId: Int, packageName: String, text: String): Int {
+        if (displayId <= Display.DEFAULT_DISPLAY || !ownDisplay(displayId) || taskId < 0 || !AsciiTextKeys.supports(text)) {
+            return AsciiTextKeys.NOT_SENT
+        }
+        val (events, targetUid) = runCatching {
+            val task = tasksOn(displayId).firstOrNull() ?: return AsciiTextKeys.NOT_SENT
+            val top = TASK_INFO.getField("topActivity").get(task) as? ComponentName
+            if (TASK_INFO.getField("taskId").getInt(task) != taskId || top?.packageName != packageName) {
+                return AsciiTextKeys.NOT_SENT
+            }
+            val uid = if (Build.VERSION.SDK_INT >= 33) {
+                val user = TASK_INFO.getField("userId").getInt(task)
+                val pm = context.packageManager
+                (pm.javaClass.getMethod("getPackageUidAsUser", String::class.java, Int::class.java, Int::class.java)
+                    .invoke(pm, packageName, 0, user) as Int).takeIf { it >= 0 } ?: return AsciiTextKeys.NOT_SENT
+            } else null
+            val keys = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD).getEvents(text.toCharArray())
+                ?.takeIf { it.isNotEmpty() } ?: return AsciiTextKeys.NOT_SENT
+            keys to uid
+        }.getOrElse { return AsciiTextKeys.NOT_SENT }
+
+        for (event in events) {
+            if (!ownDisplay(displayId) || (targetUid == null && topTaskId(displayId) != taskId)) {
+                return AsciiTextKeys.UNCONFIRMED
+            }
+            event.source = InputDevice.SOURCE_KEYBOARD
+            val sent = if (targetUid != null) injectTo(event, displayId, targetUid)
+                else inject(event, displayId, waitForFinish = true)
+            // A failed dispatch can leave a prefix. Never replay it through another input route.
+            if (!sent) return AsciiTextKeys.UNCONFIRMED
+        }
+        return AsciiTextKeys.DISPATCHED
     }
 
     override fun listUsers(): String? = sh("pm", "list", "users").takeIf { it.first == 0 }?.second

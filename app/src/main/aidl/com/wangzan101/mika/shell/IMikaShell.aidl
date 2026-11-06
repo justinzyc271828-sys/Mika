@@ -114,6 +114,10 @@ interface IMikaShell {
     // 安全锁屏还停在通知/指纹页时,做一次定向给 SystemUI 的通用上滑;不含凭据。
     boolean revealDeviceCredential() = 49;
 
+    // Type printable ASCII as keyboard events on an owned virtual display, only in the expected top task.
+    // 0 = no keys sent; 1 = all events dispatched; 2 = delivery uncertain (may be partial).
+    int injectAsciiText(int displayId, int taskId, String packageName, String text) = 50;
+
     // 沿用早先定下的销毁事务号;AIDL 要求要么全部方法编号要么都不编号
     void destroy() = 16777114;
 }

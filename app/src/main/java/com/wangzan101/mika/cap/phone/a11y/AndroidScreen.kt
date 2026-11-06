@@ -44,6 +44,7 @@ import com.wangzan101.mika.core.uistate.SystemCommandResult
 import com.wangzan101.mika.core.uistate.SystemAction
 import com.wangzan101.mika.core.uistate.SystemActionResult
 import com.wangzan101.mika.core.uistate.WheelOutcome
+import com.wangzan101.mika.cap.phone.shell.AsciiTextKeys
 import com.wangzan101.mika.cap.phone.shell.SystemIntents
 import com.wangzan101.mika.core.visual.FrameGrid
 import com.wangzan101.mika.core.uistate.Verification
@@ -615,6 +616,10 @@ class AndroidScreen(
     override suspend fun typeAt(x: Int, y: Int, text: String): ActionResult = withContext(Dispatchers.IO) {
         if (!hasDisplay) return@withContext NO_APP_OPEN
         val anchor = contextPasteAnchor(x, y)
+        val keyTarget = anchor?.takeIf { AsciiTextKeys.supports(text) }?.let {
+            val task = runCatching { shell.topTaskId(displayId) }.getOrDefault(-1)
+            if (task >= 0) FieldShape.of(it) to task else null
+        }
         val keyboardBefore = imeBounds() != null
         val tapped = verified { tapAt(x, y) }
         if (tapped !is ActionResult.Ok) return@withContext tapped
@@ -623,10 +628,37 @@ class AndroidScreen(
         tapped.appSwitched?.takeIf { !tapped.switchedByTarget }?.let { return@withContext UnseenField.tapSwitched(it) }
         if (focusedEditable() != null) return@withContext typeText(null, null, text)
         val typed = typeUnseen(text, atPoint = true)
-        if (typed is ActionResult.Failed && typed.reason == UnseenField.POINT_NOT_TYPED &&
-            anchor != null && tapped.appSwitched == null && (tapped.changed == false || !keyboardBefore && imeBounds() != null)) {
-            pasteFromContextMenu(anchor, text) ?: typed
-        } else typed
+        if (typed is ActionResult.Failed && anchor != null && tapped.appSwitched == null) {
+            if (keyTarget != null && (typed.reason == UnseenField.POINT_NOT_TYPED || typed.reason == PASTE_UNAVAILABLE)) {
+                typeWithKeys(anchor, keyTarget.first, keyTarget.second, text)?.let { return@withContext it }
+            }
+            if (typed.reason == UnseenField.POINT_NOT_TYPED && (tapped.changed == false || !keyboardBefore && imeBounds() != null)) {
+                return@withContext pasteFromContextMenu(anchor, text) ?: typed
+            }
+        }
+        typed
+    }
+
+    /** A hardware-key fallback for an explicitly tapped custom editor with no visible IME window. */
+    private suspend fun typeWithKeys(
+        anchor: AccessibilityNodeInfo, original: FieldShape, taskId: Int, text: String,
+    ): ActionResult? {
+        if (imeBounds() != null || focusedEditable() != null || anchor.isCheckable || anchor.isScrollable) return null
+        val window = contextPasteScope(anchor, original)?.second?.singleOrNull()?.takeIf { it.isFocused } ?: return null
+        val root = window.root ?: return null
+        val focus = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
+        if (focus != null && (focus.isPassword || ancestorOrSelf(anchor) { it == focus } == null)) return null
+        val pkg = anchor.packageName?.toString() ?: return null
+        currentCoroutineContext().ensureActive()
+        val sent = runCatching { shell.injectAsciiText(displayId, taskId, pkg, text) }.getOrDefault(AsciiTextKeys.UNCONFIRMED)
+        return when (sent) {
+            AsciiTextKeys.NOT_SENT -> null
+            AsciiTextKeys.DISPATCHED -> ok(
+                verification = Verification.UNKNOWN,
+                hint = "Sent keyboard events. Check the field before retrying or submitting.",
+            )
+            else -> ActionResult.Failed("key_input_unconfirmed", "Some keys may have reached the field. Check it before retrying.")
+        }
     }
 
     /** 清空这一点上的输入框,做法同 [typeAt]。 */
@@ -656,16 +688,20 @@ class AndroidScreen(
         val changed = withEventClock { clock ->
             clock.mark()
             pasted = pasteUnseen(text, beforeFrame)
-            pasted == true && awaitChange(clock, beforeTree, beforeFrame)
+            (pasted == true || atPoint && pasted == false) && awaitChange(clock, beforeTree, beforeFrame)
         }
-        when (pasted) {
-            null -> return ActionResult.Failed("paste_unavailable", HINT_PASTE_BLOCKED)
-            false -> return ActionResult.Failed("action_failed")
-            else -> Unit
-        }
+        if (pasted == null) return ActionResult.Failed(PASTE_UNAVAILABLE, HINT_PASTE_BLOCKED)
+        if (pasted == false && !atPoint) return ActionResult.Failed("action_failed")
         val after = readVisibleText()?.let { UnseenField.outside(it, imeBox() ?: ime) }
         return when (val r = UnseenField.typed(text, before, after, changed, keyboardUp = ime != null, atPoint = atPoint)) {
-            is ActionResult.Ok -> ok(changed = r.changed, verification = r.verification, hint = r.hint)
+            // A false shortcut result can still mean the key-down was delivered. If we can't
+            // rule out a write, keep the result unverified and don't send more input.
+            is ActionResult.Ok -> if (pasted == false) {
+                ok(
+                    changed = changed, verification = Verification.UNKNOWN,
+                    hint = "The paste shortcut did not confirm delivery. Check the field before retrying.",
+                )
+            } else ok(changed = r.changed, verification = r.verification, hint = r.hint)
             else -> r
         }
     }
@@ -780,7 +816,7 @@ class AndroidScreen(
             false
         }
         return when (pasted) {
-            null -> ActionResult.Failed("paste_unavailable", HINT_PASTE_BLOCKED)
+            null -> ActionResult.Failed(PASTE_UNAVAILABLE, HINT_PASTE_BLOCKED)
             false -> null
             true -> ok(verification = Verification.UNKNOWN, hint = "Used the editor's Paste menu.")
         }
@@ -2088,8 +2124,9 @@ class AndroidScreen(
         val myUser: Int get() = AppCopyReader.myUser
         const val COPY_NOT_FOUND = "copy_not_found"
         const val COPY_NOT_OPENED = "copy_not_opened"
-        const val HINT_PASTE_BLOCKED = "The text could not be entered: the field is not in the element list, so it can only be pasted, " +
-            "and the clipboard could not be used safely right now. Call hand_to_user so the user can type it."
+        const val PASTE_UNAVAILABLE = "paste_unavailable"
+        const val HINT_PASTE_BLOCKED = "The clipboard could not be used safely right now. " +
+            "Call hand_to_user so the user can type in this field."
         val IN_USE_BY_OTHER = ActionResult.Failed(APP_IN_USE_BY_OTHER_TASK)
 
         const val QUIET_MS = 500L
