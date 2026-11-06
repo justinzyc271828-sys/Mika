@@ -1,6 +1,7 @@
 package com.wangzan101.mika.cap.phone.a11y
 
 import android.app.Activity
+import android.content.Intent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.wangzan101.mika.core.assembly.toolDispatcher
 import com.wangzan101.mika.core.model.Part
@@ -72,8 +73,9 @@ class UnseenClipboardDeviceTest {
 
 internal fun DeviceSupport.Agent.startEditor(activity: Class<out Activity>) {
     val component = "${DeviceSupport.TEST_PACKAGE}/${activity.name}"
+    val flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK
     val output = DeviceSupport.sh(
-        "am start -W --activity-new-task --activity-multiple-task --display ${display.displayId} -n $component",
+        "am start -W -f $flags --display ${display.displayId} -n $component",
     )
     check("Status: ok" in output) { output }
 }
