@@ -784,7 +784,7 @@ class AndroidScreen(
         if (contextPasteScope(anchor, original) == null) return null
         val menu = ContextEditMenu(Resources.getSystem().getString(android.R.string.paste))
         fun isPaste(node: AccessibilityNodeInfo): Boolean {
-            val label = node.text?.toString() ?: node.contentDescription?.toString()
+            val label = ScreenReader.ownLabel(node)
             return menu.isPaste(node.viewIdResourceName, node.className?.toString()?.substringAfterLast('.'), label)
         }
         fun controls(scoped: List<AccessibilityWindowInfo>) =
@@ -806,10 +806,11 @@ class AndroidScreen(
             val before = controls(scoped)
             if (near(bounds, before).any(::isPaste)) return@withClipboardText false
             val existing = before.map { it.node }.toSet()
-            val hold = ViewConfiguration.getLongPressTimeout().toLong() + 2 * POLL_MS
+            // App-drawn editors can use a longer threshold than the Android setting.
+            val hold = maxOf(PASTE_MENU_MIN_HOLD_MS, ViewConfiguration.getLongPressTimeout().toLong() + 2 * POLL_MS)
             val point = GesturePacing.Point(bounds.centerX().toDouble(), bounds.centerY().toDouble(), 0)
             if (!injectStroke(listOf(point, point.copy(t = hold)))) return@withClipboardText false
-            val deadline = SystemClock.uptimeMillis() + PASTE_WAIT_MS
+            val deadline = SystemClock.uptimeMillis() + PASTE_MENU_WAIT_MS
             var previous: AccessibilityNodeInfo? = null
             do {
                 context.ensureActive()
@@ -2174,6 +2175,8 @@ class AndroidScreen(
         const val TYPE_ATTEMPTS = 2
         const val WEB_VIEW = "android.webkit.WebView"
         const val PASTE_WAIT_MS = 1_500L
+        const val PASTE_MENU_MIN_HOLD_MS = 800L
+        const val PASTE_MENU_WAIT_MS = 3_000L
         const val HINT_PASTE_UNAVAILABLE = "This field only receives real input (it needs a paste), but the clipboard could not be used safely, " +
             "so the text may only be displayed and the app may not have received it. Check that the app reacted (e.g. its save button became enabled) " +
             "before relying on it; if it did not, call hand_to_user so the user can type it."

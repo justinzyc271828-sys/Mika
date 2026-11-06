@@ -35,11 +35,10 @@ public class ClipboardEditorTestActivity extends Activity {
         });
         Runnable showPaste = () -> paste.setVisibility(View.VISIBLE);
         description.setOnTouchListener((view, event) -> {
-            if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
-                description.postDelayed(showPaste, ViewConfiguration.getLongPressTimeout());
-            } else if (event.getActionMasked() == MotionEvent.ACTION_UP ||
-                    event.getActionMasked() == MotionEvent.ACTION_CANCEL) {
-                description.removeCallbacks(showPaste);
+            if (event.getActionMasked() == MotionEvent.ACTION_UP &&
+                    event.getEventTime() - event.getDownTime() >= ViewConfiguration.getLongPressTimeout()) {
+                // Some editors check the clipboard and expose Paste after the long press ends.
+                description.postDelayed(showPaste, 1_750);
             }
             return false;
         });
