@@ -5,13 +5,14 @@ import android.view.KeyEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.wangzan101.mika.cap.phone.a11y.DeviceSupport.TEST_PACKAGE
 import com.wangzan101.mika.cap.phone.shell.AsciiTextKeys
-import com.wangzan101.mika.core.uistate.ActionResult
+import com.wangzan101.mika.core.assembly.toolDispatcher
 import com.wangzan101.mika.core.uistate.UiElement
-import com.wangzan101.mika.core.uistate.Verification
 import com.wangzan101.mika.shell.IMikaShell
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -30,12 +31,16 @@ class UnseenTextKeysDeviceTest {
             assertEquals(AsciiTextKeys.NOT_SENT, shell.injectAsciiText(id, task, TEST_PACKAGE, "Partial中文"))
             assertEquals(AsciiTextKeys.NOT_SENT, shell.injectAsciiText(id, task, TEST_PACKAGE, "Wrong\n"))
 
+            val tools = toolDispatcher(screen)
             val first = "A'z %s & 2"
-            assertKeyDispatch(screen.typeAt(title.centerX, title.centerY, first))
+            val firstResult = tools.typeAtTestPoint(title, first, pressEnter = true)
+            assertKeyDispatch(firstResult, screen.peek().elements)
+            assertEquals(firstResult.toString(), "true", firstResult["enterSkipped"]?.jsonPrimitive?.content)
             screen.awaitEditor("Title: $first")
             val description = screen.awaitEditor("Description")
             val second = "HermesTest"
-            assertKeyDispatch(screen.typeAt(description.centerX, description.centerY, second))
+            val secondResult = tools.typeAtTestPoint(description, second)
+            assertKeyDispatch(secondResult, screen.peek().elements)
             screen.awaitEditor("Description: $second")
             screen.awaitEditor("Title: $first")
             assertFalse(screen.keyboardUp())
@@ -46,9 +51,10 @@ class UnseenTextKeysDeviceTest {
     fun doesNotReplayWhenRejectedPasteAlreadyChangedTheField() = runBlocking {
         withEditor(failPasteAfter = "Prefix") { _, _, screen ->
             val title = screen.awaitEditor("Title")
-            val result = screen.typeAt(title.centerX, title.centerY, "PrefixAndRest")
-            assertTrue("expected uncertain paste, got $result", result is ActionResult.Ok &&
-                result.verification == Verification.UNKNOWN && result.hint?.startsWith("The paste shortcut") == true)
+            val result = toolDispatcher(screen).typeAtTestPoint(title, "PrefixAndRest", pressEnter = true)
+            assertEquals(result.toString(), "unknown", result["verification"]?.jsonPrimitive?.content)
+            assertEquals(result.toString(), "true", result["enterSkipped"]?.jsonPrimitive?.content)
+            assertTrue(result.toString(), result["hint"]?.jsonPrimitive?.content?.contains("The paste shortcut") == true)
             screen.awaitEditor("Title: Prefix")
         }
     }
@@ -70,7 +76,7 @@ class UnseenTextKeysDeviceTest {
                 }
             }
             val screen = AndroidScreen(DeviceSupport.service(), rejectingPaste, DeviceSupport.ready(agent.display))
-            DeviceSupport.startTestActivity(id, KeyOnlyEditorTestActivity::class.java)
+            agent.startEditor(KeyOnlyEditorTestActivity::class.java)
             check(shell, id, screen)
         } finally {
             agent.release()
@@ -87,8 +93,9 @@ class UnseenTextKeysDeviceTest {
         found
     }
 
-    private fun assertKeyDispatch(result: ActionResult) {
-        assertTrue("expected unverified key dispatch, got $result", result is ActionResult.Ok &&
-            result.verification == Verification.UNKNOWN && result.hint?.startsWith("Sent keyboard events") == true)
+    private fun assertKeyDispatch(result: JsonObject, elements: List<UiElement>) {
+        assertEquals("$result with $elements", "true", result["ok"]?.jsonPrimitive?.content)
+        assertEquals(result.toString(), "unknown", result["verification"]?.jsonPrimitive?.content)
+        assertTrue(result.toString(), result["hint"]?.jsonPrimitive?.content?.contains("Sent keyboard events") == true)
     }
 }

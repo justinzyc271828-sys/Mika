@@ -3,6 +3,7 @@ package com.wangzan101.mika.cap.phone.a11y;
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -36,6 +37,13 @@ public class KeyOnlyEditorTestActivity extends Activity {
         editor.setTextSize(24);
         editor.setPadding(24, 32, 24, 32);
         editor.setFocusableInTouchMode(true);
+        editor.setOnFocusChangeListener((view, focused) -> {
+            if (focused) view.setPadding(24, 48, 24, 32);
+        });
+        editor.setOnTouchListener((view, event) -> {
+            if (event.getActionMasked() == MotionEvent.ACTION_DOWN) view.requestFocus();
+            return false;
+        });
         editor.setOnClickListener(view -> view.requestFocus());
         content.addView(editor, new LinearLayout.LayoutParams(-1, -2));
     }

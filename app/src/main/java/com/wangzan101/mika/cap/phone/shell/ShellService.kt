@@ -1317,7 +1317,8 @@ class ShellService(
             markSensitive(clip)
             clipboard.setPrimaryClip(clip)
             ourText = text
-            CLIP_SET
+            // Android can silently decline the write. Never paste a clipboard we didn't set.
+            if (nowState(text) == ShellClip.Now.Ours) CLIP_SET else CLIP_FAILED
         } catch (t: Throwable) {
             Log.w(TAG, "setClipText failed", t)
             CLIP_FAILED
