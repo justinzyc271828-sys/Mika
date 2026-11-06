@@ -802,32 +802,45 @@ class AndroidScreen(
         val context = currentCoroutineContext()
         val pasted = withClipboardText(text) {
             context.ensureActive()
-            val (bounds, scoped) = contextPasteScope(anchor, original) ?: return@withClipboardText false
+            val (startBounds, scoped) = contextPasteScope(anchor, original) ?: return@withClipboardText false
             val before = controls(scoped)
-            if (near(bounds, before).any(::isPaste)) return@withClipboardText false
+            if (near(startBounds, before).any(::isPaste)) return@withClipboardText false
             val existing = before.map { it.node }.toSet()
             // App-drawn editors can use a longer threshold than the Android setting.
             val hold = maxOf(PASTE_MENU_MIN_HOLD_MS, ViewConfiguration.getLongPressTimeout().toLong() + 2 * POLL_MS)
-            val point = GesturePacing.Point(bounds.centerX().toDouble(), bounds.centerY().toDouble(), 0)
-            if (!injectStroke(listOf(point, point.copy(t = hold)))) return@withClipboardText false
-            val deadline = SystemClock.uptimeMillis() + PASTE_MENU_WAIT_MS
-            var previous: AccessibilityNodeInfo? = null
-            do {
+            for (attempt in 0..1) {
                 context.ensureActive()
-                val (currentBounds, currentWindows) = contextPasteScope(anchor, original) ?: return@withClipboardText false
-                val paste = menu.freshPaste(existing, near(currentBounds, controls(currentWindows)), ::isPaste)
-                if (paste != null && paste == previous) {
-                    if (!paste.refresh() || !paste.isVisibleToUser || !paste.isEnabled || !paste.isClickable || !isPaste(paste) || handedOver()) {
-                        return@withClipboardText false
-                    }
-                    context.ensureActive()
-                    if (!paste.performAction(AccessibilityNodeInfo.ACTION_CLICK)) return@withClipboardText false
-                    Thread.sleep(PASTE_WAIT_MS)
-                    return@withClipboardText true
+                val (bounds, windows) = contextPasteScope(anchor, original) ?: return@withClipboardText false
+                if (attempt > 0 && (!anchor.isFocused || windows.singleOrNull()?.isFocused != true ||
+                        controls(windows).any { it.node !in existing })) {
+                    return@withClipboardText false
                 }
-                previous = paste
-                Thread.sleep(POLL_MS)
-            } while (SystemClock.uptimeMillis() < deadline)
+                val point = GesturePacing.Point(bounds.centerX().toDouble(), bounds.centerY().toDouble(), 0)
+                if (!injectStroke(listOf(point, point.copy(t = hold)))) return@withClipboardText false
+                val deadline = SystemClock.uptimeMillis() + PASTE_MENU_WAIT_MS
+                var previous: AccessibilityNodeInfo? = null
+                var sawNewControl = false
+                do {
+                    context.ensureActive()
+                    val (currentBounds, currentWindows) = contextPasteScope(anchor, original) ?: return@withClipboardText false
+                    val current = controls(currentWindows)
+                    sawNewControl = sawNewControl || current.any { it.node !in existing }
+                    val paste = menu.freshPaste(existing, near(currentBounds, current), ::isPaste)
+                    if (paste != null && paste == previous) {
+                        if (!paste.refresh() || !paste.isVisibleToUser || !paste.isEnabled || !paste.isClickable || !isPaste(paste) || handedOver()) {
+                            return@withClipboardText false
+                        }
+                        context.ensureActive()
+                        if (!paste.performAction(AccessibilityNodeInfo.ACTION_CLICK)) return@withClipboardText false
+                        Thread.sleep(PASTE_WAIT_MS)
+                        return@withClipboardText true
+                    }
+                    previous = paste
+                    Thread.sleep(POLL_MS)
+                } while (SystemClock.uptimeMillis() < deadline)
+                // An editor can ignore the first hold. Only retry if no menu controls appeared.
+                if (sawNewControl) return@withClipboardText false
+            }
             false
         }
         return when (pasted) {
