@@ -74,6 +74,9 @@ class NotificationDiagnosticsTest(unittest.TestCase):
         state = diagnostics.package_state(text, 128, False)
         self.assertTrue(state["installed"])
         self.assertEqual(state["uid"], 12810123)
+        adb = FakeAdb(source=package_dump(SOURCE, user=128), dump=NOTIFICATIONS.replace("(user 0)", "(user 128)"))
+        report = diagnostics.inspect_notifications(adb, SOURCE, listener=LISTENER, user=128)
+        self.assertTrue(report["listener"]["bound"])
 
     def test_effective_disabled_list_is_honored(self):
         self.assertFalse(diagnostics.package_state(package_dump(SOURCE), 0, True)["effective_enabled"])
@@ -105,13 +108,24 @@ class NotificationDiagnosticsTest(unittest.TestCase):
         self.assertEqual(diagnostics.appop_mode("No operations.\nDefault mode: allow", "POST_NOTIFICATION"), "allow")
 
     def test_listener_shorthand_and_live_binding(self):
-        state = diagnostics.listener_state(LISTENER, NOTIFICATIONS, LISTENER)
-        self.assertTrue(state["access_granted"])
-        self.assertTrue(state["bound"])
+        for user in (0, 128):
+            with self.subTest(user=user):
+                text = NOTIFICATIONS.replace("(user 0)", f"(user {user})")
+                state = diagnostics.listener_state(LISTENER, text, LISTENER, user)
+                self.assertTrue(state["access_granted"])
+                self.assertTrue(state["bound"])
 
     def test_allowed_listener_can_be_unbound(self):
         text = NOTIFICATIONS.replace("ComponentInfo{com.example.agent/com.example.agent.Listener}", "ComponentInfo{com.example.other/com.example.other.Listener}")
         self.assertFalse(diagnostics.listener_state(LISTENER, text, LISTENER)["bound"])
+        report = diagnostics.inspect_notifications(FakeAdb(dump=NOTIFICATIONS.replace("(user 0)", "(user 128)")),
+                                                   SOURCE, listener=LISTENER)
+        self.assertFalse(report["listener"]["bound"])
+        self.assertIn("listener_not_bound", {item["code"] for item in report["findings"]})
+
+    def test_listener_without_profile_metadata_is_unknown(self):
+        text = NOTIFICATIONS.replace(" (user 0)", "")
+        self.assertIsNone(diagnostics.listener_state(LISTENER, text, LISTENER)["bound"])
 
     def test_dependency_failure_is_specific_and_content_is_not_returned(self):
         adb = FakeAdb(dependency=package_dump(DEPENDENCY, 3, True), disabled="package:" + DEPENDENCY)

@@ -72,7 +72,7 @@ def component_name(value):
     return package + "/" + (package + name if name.startswith(".") else name)
 
 
-def listener_state(settings, dump, component):
+def listener_state(settings, dump, component, user=0):
     expected = component_name(component)
     allowed = {component_name(x) for x in settings.strip().split(":") if "/" in x}
     live = None
@@ -85,8 +85,12 @@ def listener_state(settings, dump, component):
         for entry in lines[index + 1:]:
             if entry.strip() and len(entry) - len(entry.lstrip()) <= indent:
                 break
-            values.extend(re.findall(r"ComponentInfo\{([^}]+)\}", entry))
-        live = expected in {component_name(x) for x in values if "/" in x}
+            values.extend(re.findall(r"ComponentInfo\{([^}]+)\}(?:\s+\(user (\d+)\))?", entry))
+        profiles = {profile for name, profile in values if "/" in name and component_name(name) == expected}
+        if str(user) in profiles:
+            live = True
+        elif "" not in profiles:
+            live = False
         break
     return {"component": expected, "access_granted": expected in allowed, "bound": live}
 
@@ -134,7 +138,7 @@ def inspect_notifications(adb, package, dependencies=(), listener=None, user=0):
     listener_info = None
     if listener:
         setting = probe("listener_access", "settings", "--user", str(user), "get", "secure", "enabled_notification_listeners")
-        listener_info = listener_state(setting, dump or "", listener) if setting is not None else None
+        listener_info = listener_state(setting, dump or "", listener, user) if setting is not None else None
         if listener_info and not listener_info["access_granted"]:
             findings.append({"code": "listener_access_missing", "component": listener_info["component"]})
         elif listener_info and listener_info["bound"] is False:
