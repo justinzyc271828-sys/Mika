@@ -513,7 +513,14 @@ class AndroidScreen(
         val found = when (val f = findField(ref, snapshotId)) {
             is Field.Found -> f
             is Field.Missing -> return@withContext when {
-                f.reason == "not_editable" -> ActionResult.Failed(f.reason, "If this is a visible input box, give its point instead.")
+                f.reason == "not_editable" -> {
+                    if (ref != null && snapshotId != null) {
+                        contextPasteAnchor(ref, snapshotId)?.let { anchor ->
+                            pasteFromContextMenu(anchor, text)?.let { return@withContext it }
+                        }
+                    }
+                    ActionResult.Failed(f.reason, "The referenced control did not expose an editor or a verified Paste menu.")
+                }
                 f.reason != NO_FOCUS -> ActionResult.Failed(f.reason)
                 // 屏上什么都没拿着输入焦点、也没弹输入法:没有框接得住粘贴,不去粘(粘了界面别处一动就会被当成「可能打进去了」)
                 !somethingHoldsInputFocus() -> ActionResult.Failed(NO_FOCUS)
@@ -639,7 +646,6 @@ class AndroidScreen(
         val keyTask = if (anchor != null && AsciiTextKeys.supports(text)) {
             runCatching { shell.topTaskId(displayId) }.getOrDefault(-1)
         } else -1
-        val keyboardBefore = imeBounds() != null
         val tapped = verified { tapAt(x, y) }
         if (tapped !is ActionResult.Ok) return@withContext tapped
         // 点了开出了别的 App(开到用户主屏上又挪回来的也是):不打字,照实报这一下点的结果
@@ -658,12 +664,10 @@ class AndroidScreen(
             if (keyTask >= 0 && (typed.reason == INPUT_NOT_SENT || typed.reason == PASTE_UNAVAILABLE)) {
                 typeWithKeys(anchor, original, keyTask, text)?.let { return@withContext it }
             }
-            if (typed.reason == INPUT_NOT_SENT) {
+            if (ContextPastePolicy.canRetry(typed.reason)) {
                 val sameEditorFocused = pointEditorHasFocus(anchor, original)
-                // 自绘编辑器可能只有光标或高亮,不弹输入法。
-                if (tapped.changed == false || (!keyboardBefore && imeBounds() != null) || sameEditorFocused) {
-                    pasteFromContextMenu(anchor, text)?.let { return@withContext it }
-                }
+                // The local Paste command itself confirms that the custom control can accept text.
+                pasteFromContextMenu(anchor, text)?.let { return@withContext it }
                 if (sameEditorFocused && keyTask < 0) {
                     return@withContext typed.copy(hint = "The editor did not accept clipboard input. Call hand_to_user to enter the text.")
                 }
@@ -798,11 +802,19 @@ class AndroidScreen(
             val bounds = Rect().also(entry.node::getBoundsInScreen)
             if (bounds.contains(x, y)) entry to bounds.width().toLong() * bounds.height() else null
         }.minByOrNull { it.second }?.first ?: return null
-        return hit.node.takeIf {
-            it.isEnabled && !it.isPassword && !it.isLongClickable && !hit.locator.inList &&
-                !hit.element.role.endsWith("Button")
-        }
+        return hit.node.takeIf { contextPasteCandidate(hit) }
     }
+
+    private fun contextPasteAnchor(ref: String, snapshotId: String): AccessibilityNodeInfo? {
+        if (handedOver()) return null
+        val node = resolve(ref, snapshotId)?.first ?: return null
+        val entry = read().entries.firstOrNull { it.node == node } ?: return null
+        return node.takeIf { contextPasteCandidate(entry) }
+    }
+
+    private fun contextPasteCandidate(entry: NodeEntry): Boolean = ContextPastePolicy.canProbe(
+        entry.node.isEnabled, entry.node.isPassword, entry.locator.inList, entry.element.role,
+    )
 
     /** The editor must still be present, with only its own app's windows above it. */
     private fun contextPasteScope(
@@ -830,11 +842,14 @@ class AndroidScreen(
         return bounds to scoped
     }
 
-    /** 只在粘贴键确定没发出后尝试编辑器自己刚弹出的菜单;点击 Paste 的结果不确定时不再走其他输入路径。 */
+    /** Confirm a newly opened editor menu before using its local Paste command. */
     private suspend fun pasteFromContextMenu(anchor: AccessibilityNodeInfo, text: String): ActionResult? {
         if (!anchor.refresh()) return null
         val original = FieldShape.of(anchor)
         if (contextPasteScope(anchor, original) == null) return null
+        val beforeText = readVisibleText()?.let { UnseenField.outside(it, imeBox()) }
+        val beforeTree = treeHash()
+        val beforeFrame = frameSignature()
         val menu = ContextEditMenu(Resources.getSystem().getString(android.R.string.paste))
         fun isPaste(node: AccessibilityNodeInfo): Boolean {
             val label = ScreenReader.ownLabel(node)
@@ -878,7 +893,10 @@ class AndroidScreen(
                     val (currentBounds, currentWindows) = contextPasteScope(anchor, original) ?: return@withClipboardText AsciiTextKeys.NOT_SENT
                     val current = controls(currentWindows)
                     sawNewControl = sawNewControl || current.any { it.node !in existing }
-                    val paste = menu.freshPaste(existing, near(currentBounds, current), ::isPaste)
+                    // Some editors add a clickable backdrop around the existing field.
+                    // Its ancestors are containers, not newly offered edit commands.
+                    val containers = generateSequence(anchor) { it.parent }.toSet()
+                    val paste = menu.freshPaste(existing, near(currentBounds, current), ::isPaste, containers)
                     if (paste != null && paste == previous) {
                         if (!paste.refresh() || !paste.isVisibleToUser || !paste.isEnabled || !paste.isClickable || !isPaste(paste) || handedOver()) {
                             return@withClipboardText AsciiTextKeys.NOT_SENT
@@ -900,7 +918,12 @@ class AndroidScreen(
         return when (pasted) {
             null -> ActionResult.Failed(PASTE_UNAVAILABLE, HINT_PASTE_BLOCKED)
             AsciiTextKeys.NOT_SENT -> null
-            AsciiTextKeys.DISPATCHED -> ok(verification = Verification.UNKNOWN, hint = "Used the editor's Paste menu.")
+            AsciiTextKeys.DISPATCHED -> {
+                val afterText = readVisibleText()?.let { UnseenField.outside(it, imeBox()) }
+                val changed = beforeTree != treeHash() || !beforeFrame.contentEquals(frameSignature())
+                val verification = UnseenField.verify(text, beforeText, afterText, changed)
+                ok(changed = changed, verification = verification, hint = "Used and checked the editor's Paste menu.")
+            }
             else -> ok(
                 verification = Verification.UNKNOWN,
                 hint = "The Paste menu click did not confirm delivery. Check the field before retrying.",
