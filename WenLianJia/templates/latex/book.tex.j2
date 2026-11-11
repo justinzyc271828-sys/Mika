@@ -1,0 +1,40 @@
+\documentclass[UTF8,a4paper,12pt,openany]{ctexbook}
+\usepackage{geometry}
+\geometry{margin={{ margin_mm }}mm}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{needspace}
+\usepackage[hidelinks]{hyperref}
+\definecolor{brandcolor}{HTML}{1F4E79}
+\definecolor{rulegray}{HTML}{B7BEC8}
+\setmainfont{ {{ font_latin }} }
+\setCJKmainfont{ {{ font_main }} }
+\setCJKsansfont{ {{ font_hei }} }
+\setCJKmonofont{ {{ font_song }} }
+\linespread{1.32}
+\setlength{\parindent}{2em}
+\setlength{\parskip}{4pt}
+\setlist[enumerate]{leftmargin=2.2em,itemsep=5pt,topsep=4pt}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{gray} {{ header_left }}}
+\fancyhead[R]{\small\color{gray} {{ header_right }}}
+\fancyfoot[C]{\small 第 \thepage\ 页 / 共 \pageref{LastPage} 页}
+\renewcommand{\headrulewidth}{0.3pt}
+\fancypagestyle{plain}{\fancyhf{}\fancyhead[L]{\small\color{gray} {{ header_left }}}\fancyhead[R]{\small\color{gray} {{ header_right }}}\fancyfoot[C]{\small 第 \thepage\ 页 / 共 \pageref{LastPage} 页}\renewcommand{\headrulewidth}{0.3pt}}
+\hypersetup{pdftitle={ {{ pdf_title }} },pdfauthor={ {{ pdf_author }} }}
+\begin{document}
+{{ cover }}
+{% if toc %}
+\tableofcontents
+\clearpage
+{% endif %}
+{{ body }}
+\end{document}

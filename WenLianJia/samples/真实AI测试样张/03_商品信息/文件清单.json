@@ -1,0 +1,81 @@
+{
+  "sku": "REAL01",
+  "generated_at": "2026-11-11T06:23:34+00:00",
+  "root": "D:\\Workspaces\\goods\\WenLianJia\\acceptance\\real_ai_v1\\01_生产中\\REAL01_线性代数真实AI测试",
+  "files": [
+    {
+      "name": "REAL01_线性代数测试教材_习题详解_v1.0.pdf",
+      "path": "D:\\Workspaces\\goods\\WenLianJia\\acceptance\\real_ai_v1\\01_生产中\\REAL01_线性代数真实AI测试\\04_最终PDF\\REAL01_线性代数测试教材_习题详解_v1.0.pdf",
+      "relative_path": "04_最终PDF/REAL01_线性代数测试教材_习题详解_v1.0.pdf",
+      "kind": "pdf_full",
+      "size": 327585,
+      "sha256": "61c74863047ff98555a1d5d9d0bf8ce54c51beac8963e966764ea314ce4a0632"
+    },
+    {
+      "name": "REAL01_线性代数测试教材_答案速查版_v1.0.pdf",
+      "path": "D:\\Workspaces\\goods\\WenLianJia\\acceptance\\real_ai_v1\\01_生产中\\REAL01_线性代数真实AI测试\\04_最终PDF\\REAL01_线性代数测试教材_答案速查版_v1.0.pdf",
+      "relative_path": "04_最终PDF/REAL01_线性代数测试教材_答案速查版_v1.0.pdf",
+      "kind": "pdf_quick",
+      "size": 186895,
+      "sha256": "e6c70d28234afaa0b443b719e77b7182662c08c967f6357c35d9843860d79f39"
+    },
+    {
+      "name": "01_商品封面.png",
+      "path": "D:\\Workspaces\\goods\\WenLianJia\\acceptance\\real_ai_v1\\01_生产中\\REAL01_线性代数真实AI测试\\05_商品图片\\01_商品封面.png",
+      "relative_path": "05_商品图片/01_商品封面.png",
+      "kind": "product_image",
+      "size": 125369,
+      "sha256": "cd7ffb1e28bc8d4730727325cbb4fd55bc66aca3ff349d33972bfef5217ca12b"
+    },
+    {
+      "name": "02_商品主图.png",
+      "path": "D:\\Workspaces\\goods\\WenLianJia\\acceptance\\real_ai_v1\\01_生产中\\REAL01_线性代数真实AI测试\\05_商品图片\\02_商品主图.png",
+      "relative_path": "05_商品图片/02_商品主图.png",
+      "kind": "product_image",
+      "size": 439537,
+      "sha256": "b72f5503f2da2c2b0199ef49ae2863c615d1206e13e66bc27ef1447b66c48d84"
+    },
+    {
+      "name": "03_内容展示图.png",
+      "path": "D:\\Workspaces\\goods\\WenLianJia\\acceptance\\real_ai_v1\\01_生产中\\REAL01_线性代数真实AI测试\\05_商品图片\\03_内容展示图.png",
+      "relative_path": "05_商品图片/03_内容展示图.png",
+      "kind": "product_image",
+      "size": 269769,
+      "sha256": "1c9a57acfd7c2aea5d8ec75d3dd6a314bb0bb22f6fc54f67fdab78d7b2dc6e87"
+    },
+    {
+      "name": "04_商品详情图.png",
+      "path": "D:\\Workspaces\\goods\\WenLianJia\\acceptance\\real_ai_v1\\01_生产中\\REAL01_线性代数真实AI测试\\05_商品图片\\04_商品详情图.png",
+      "relative_path": "05_商品图片/04_商品详情图.png",
+      "kind": "product_image",
+      "size": 342799,
+      "sha256": "1766571eeb81802e176d269ab0e374d0e2a1fd45d32d65b262e8f4bedb1d2faf"
+    },
+    {
+      "name": "05_商品特色图.png",
+      "path": "D:\\Workspaces\\goods\\WenLianJia\\acceptance\\real_ai_v1\\01_生产中\\REAL01_线性代数真实AI测试\\05_商品图片\\05_商品特色图.png",
+      "relative_path": "05_商品图片/05_商品特色图.png",
+      "kind": "product_image",
+      "size": 123940,
+      "sha256": "2abae3b99ce922528b90475e73d9dffb0ffd8b7db5a360e485b47509625610e3"
+    },
+    {
+      "name": "06_文件内容说明图.png",
+      "path": "D:\\Workspaces\\goods\\WenLianJia\\acceptance\\real_ai_v1\\01_生产中\\REAL01_线性代数真实AI测试\\05_商品图片\\06_文件内容说明图.png",
+      "relative_path": "05_商品图片/06_文件内容说明图.png",
+      "kind": "product_image",
+      "size": 343889,
+      "sha256": "3f2751abf0f5038a71e29f4f7b45ff9f2b52b27619ea8f2144cd0e7f99dde495"
+    },
+    {
+      "name": "07_品牌宣传图.png",
+      "path": "D:\\Workspaces\\goods\\WenLianJia\\acceptance\\real_ai_v1\\01_生产中\\REAL01_线性代数真实AI测试\\05_商品图片\\07_品牌宣传图.png",
+      "relative_path": "05_商品图片/07_品牌宣传图.png",
+      "kind": "product_image",
+      "size": 100630,
+      "sha256": "c9a006eb27302e8cc3dfc73284e7ef814a9b881b2f3a8269fe6272a8194b6d55"
+    }
+  ],
+  "count": 9,
+  "total_bytes": 2260413
+}

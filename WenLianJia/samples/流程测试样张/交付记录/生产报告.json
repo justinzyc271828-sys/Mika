@@ -1,0 +1,97 @@
+{
+  "generated_at": "2026-11-11T04:59:11+00:00",
+  "job": {
+    "id": "job_76cb5fda597045f79585bb04a7d048ab",
+    "product_id": "prd_b0be6aeecdf1431083aab9119855fd81",
+    "status": "completed",
+    "current_stage": "done",
+    "stage_status": {
+      "parse": "completed",
+      "chapters": "completed",
+      "exercises": "completed",
+      "solve": "completed",
+      "verify": "completed",
+      "pdf": "completed",
+      "images": "completed",
+      "records": "completed",
+      "upload": "skipped",
+      "share": "skipped",
+      "cleanup": "skipped"
+    },
+    "progress": 1.0,
+    "message": "本地商品包已完成（8 道题，8 道复核通过），云端未启用",
+    "error": "",
+    "options": {
+      "upload": false,
+      "share": false,
+      "cleanup": false,
+      "force": []
+    },
+    "version": 1,
+    "resume_count": 0,
+    "created_at": "2026-11-11T04:58:57+00:00",
+    "started_at": "2026-11-11T04:58:57+00:00",
+    "finished_at": "2026-11-11T04:59:11+00:00"
+  },
+  "product": {
+    "id": "prd_b0be6aeecdf1431083aab9119855fd81",
+    "sku": "PIPE01",
+    "title": "线性代数流水线测试",
+    "subject": "mathematics",
+    "source_title": "线性代数测试教材",
+    "source_author": "测试作者",
+    "source_edition": "",
+    "source_path": "D:\\Workspaces\\goods\\WenLianJia\\.tmp_pipeline_test\\01_生产中\\PIPE01_线性代数流水线测试\\00_原始教材\\sample_linear_algebra.pdf",
+    "source_sha256": "6376855efaf9250a70b42ea876ce0690b1d84c7491aac4e0537bed4164c0b451",
+    "total_pages": 5,
+    "chapter_count": 2,
+    "exercise_count": 8,
+    "solved_count": 8,
+    "verified_count": 8,
+    "review_required": 0,
+    "status": "packaged",
+    "version": "1.0",
+    "notes": "",
+    "created_at": "2026-11-11T04:58:57+00:00",
+    "updated_at": "2026-11-11T04:59:11+00:00",
+    "metadata": {
+      "cover_note": "流程测试样张：使用确定性样例解答验证生产链路，不代表真实 AI 结果。"
+    }
+  },
+  "stage_details": {
+    "parse": "5 页，32 行",
+    "chapters": "2 章（outline）",
+    "exercises": "8 道习题",
+    "solve": "完成 8 道，复用 0 道，失败 0 道",
+    "verify": "通过 8 道，待人工复核 0 道",
+    "pdf": "完整版 12 页，速查版 2 页",
+    "images": "7 张商品图片（local_design）",
+    "records": "商品记录 9 个文件",
+    "done": "本地商品包已完成（8 道题，8 道复核通过），云端未启用"
+  },
+  "warnings": [],
+  "errors": [],
+  "cloud_state": "disabled",
+  "usage": {
+    "calls": 0,
+    "tin": 0,
+    "tout": 0,
+    "cost": 0,
+    "unknown_cost": null
+  },
+  "files": {
+    "full_pdf": "D:\\Workspaces\\goods\\WenLianJia\\.tmp_pipeline_test\\01_生产中\\PIPE01_线性代数流水线测试\\04_最终PDF\\PIPE01_线性代数测试教材_习题详解_v1.0.pdf",
+    "quick_pdf": "D:\\Workspaces\\goods\\WenLianJia\\.tmp_pipeline_test\\01_生产中\\PIPE01_线性代数流水线测试\\04_最终PDF\\PIPE01_线性代数测试教材_答案速查版_v1.0.pdf",
+    "images": [
+      "D:\\Workspaces\\goods\\WenLianJia\\.tmp_pipeline_test\\01_生产中\\PIPE01_线性代数流水线测试\\05_商品图片\\01_商品封面.png",
+      "D:\\Workspaces\\goods\\WenLianJia\\.tmp_pipeline_test\\01_生产中\\PIPE01_线性代数流水线测试\\05_商品图片\\02_商品主图.png",
+      "D:\\Workspaces\\goods\\WenLianJia\\.tmp_pipeline_test\\01_生产中\\PIPE01_线性代数流水线测试\\05_商品图片\\03_内容展示图.png",
+      "D:\\Workspaces\\goods\\WenLianJia\\.tmp_pipeline_test\\01_生产中\\PIPE01_线性代数流水线测试\\05_商品图片\\04_商品详情图.png",
+      "D:\\Workspaces\\goods\\WenLianJia\\.tmp_pipeline_test\\01_生产中\\PIPE01_线性代数流水线测试\\05_商品图片\\05_商品特色图.png",
+      "D:\\Workspaces\\goods\\WenLianJia\\.tmp_pipeline_test\\01_生产中\\PIPE01_线性代数流水线测试\\05_商品图片\\06_文件内容说明图.png",
+      "D:\\Workspaces\\goods\\WenLianJia\\.tmp_pipeline_test\\01_生产中\\PIPE01_线性代数流水线测试\\05_商品图片\\07_品牌宣传图.png"
+    ]
+  },
+  "uploads": [],
+  "share": null
+}

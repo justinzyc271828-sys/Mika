@@ -1,0 +1,19 @@
+# WenLianJia runtime requirements (Windows 10/11, Python 3.13)
+PySide6==6.12.0
+pymupdf==2.1.0
+openai==3.49.0
+pillow==13.0.0
+sympy==1.14.0
+jinja2==3.1.6
+python-dotenv==1.2.4
+pydantic==2.14.3
+httpx==0.28.1
+qrcode==8.2
+rapidocr==3.10.0
+onnxruntime==1.27.0
+SQLAlchemy==2.0.44
+openpyxl==3.1.5
+
+# Development / test only
+pytest==9.2.0
+pytest-qt==4.5.0

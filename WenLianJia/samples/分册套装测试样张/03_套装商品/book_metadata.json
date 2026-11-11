@@ -1,0 +1,43 @@
+{
+  "title": "线性代数",
+  "original_title": "",
+  "author": [
+    "WenLianJia Test Fixture"
+  ],
+  "translator": [],
+  "publisher": "测试出版社",
+  "edition": "测试版",
+  "publication_year": "",
+  "isbn_10": "",
+  "isbn_13": "",
+  "volumes": 2,
+  "language": "zh-CN",
+  "subject": "mathematics",
+  "cover_image": "",
+  "cover_source_url": "",
+  "source_license": "",
+  "source_verified": false,
+  "verification_status": "NEEDS_REVIEW",
+  "catalog_code": "LA001",
+  "productions": [
+    {
+      "product_id": "prd_8b954463bc174c73ac4dc7f13534c941",
+      "volume_label": "上册",
+      "volume_number": 1,
+      "volume_code": "U",
+      "status": "packaged",
+      "exercise_count": 4,
+      "verified_count": 4
+    },
+    {
+      "product_id": "prd_390cbef622124f5e816fd4f826b748b0",
+      "volume_label": "下册",
+      "volume_number": 2,
+      "volume_code": "L",
+      "status": "packaged",
+      "exercise_count": 4,
+      "verified_count": 4
+    }
+  ],
+  "updated_at": "2026-11-11T05:48:52+00:00"
+}

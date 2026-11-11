@@ -1,0 +1,30 @@
+\documentclass[UTF8,a4paper,12pt,openany]{ctexbook}
+\usepackage{geometry}
+\geometry{margin={{ margin_mm }}mm}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage[hidelinks]{hyperref}
+\definecolor{brandcolor}{HTML}{1F4E79}
+\setmainfont{ {{ font_latin }} }
+\setCJKmainfont{ {{ font_main }} }
+\setCJKsansfont{ {{ font_hei }} }
+\setCJKmonofont{ {{ font_song }} }
+\linespread{1.25}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{gray} {{ header_left }}}
+\fancyhead[R]{\small\color{gray} 答案速查版}
+\fancyfoot[C]{\small 第 \thepage\ 页 / 共 \pageref{LastPage} 页}
+\renewcommand{\headrulewidth}{0.3pt}
+\hypersetup{pdftitle={ {{ pdf_title }} },pdfauthor={ {{ pdf_author }} }}
+\begin{document}
+{{ cover }}
+\clearpage
+{{ body }}
+\end{document}

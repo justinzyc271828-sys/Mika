@@ -1,0 +1,44 @@
+{
+  "sku": "REAL01",
+  "product_id": "prd_f3fc4766ca7c4d438c96bacbb5e2a1cd",
+  "checked_at": "2026-11-11T06:23:34+00:00",
+  "overall": "pending",
+  "checks": [
+    {
+      "name": "完整解析 PDF 已生成",
+      "status": "pass",
+      "evidence": "D:\\Workspaces\\goods\\WenLianJia\\acceptance\\real_ai_v1\\01_生产中\\REAL01_线性代数真实AI测试\\04_最终PDF\\REAL01_线性代数测试教材_习题详解_v1.0.pdf"
+    },
+    {
+      "name": "答案速查 PDF 已生成",
+      "status": "pass",
+      "evidence": "D:\\Workspaces\\goods\\WenLianJia\\acceptance\\real_ai_v1\\01_生产中\\REAL01_线性代数真实AI测试\\04_最终PDF\\REAL01_线性代数测试教材_答案速查版_v1.0.pdf"
+    },
+    {
+      "name": "商品图片已生成",
+      "status": "pass",
+      "evidence": "7 张"
+    },
+    {
+      "name": "文件哈希已记录",
+      "status": "pass",
+      "evidence": "见 文件清单.json"
+    },
+    {
+      "name": "网盘上传已核对",
+      "status": "pending",
+      "evidence": "0/0 个文件标记为已核对"
+    },
+    {
+      "name": "分享链接已创建",
+      "status": "pending",
+      "evidence": "未配置或未执行百度网盘上传"
+    },
+    {
+      "name": "分享链接已验证",
+      "status": "pending",
+      "evidence": "需要人工验证或平台 API 验证"
+    }
+  ],
+  "note": "自动验收只覆盖本机可核实的项目；分享链接或云端内容未经人工验证时标记为 pending。"
+}

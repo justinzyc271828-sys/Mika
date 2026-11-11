@@ -1,0 +1,29 @@
+{
+  "product_id": "prd_b0be6aeecdf1431083aab9119855fd81",
+  "sku": "PIPE01",
+  "title": "线性代数流水线测试",
+  "generated_at": "2026-11-11T04:59:11+00:00",
+  "width": 1080,
+  "height": 1440,
+  "mode": "local_design",
+  "source_pdf": "D:\\Workspaces\\goods\\WenLianJia\\.tmp_pipeline_test\\01_生产中\\PIPE01_线性代数流水线测试\\04_最终PDF\\PIPE01_线性代数测试教材_习题详解_v1.0.pdf",
+  "files": [
+    "01_商品封面.png",
+    "02_商品主图.png",
+    "03_内容展示图.png",
+    "04_商品详情图.png",
+    "05_商品特色图.png",
+    "06_文件内容说明图.png",
+    "07_品牌宣传图.png"
+  ],
+  "stats": {
+    "total": 8,
+    "verified": 8,
+    "review": 0,
+    "chapters": 2,
+    "chapter_titles": [
+      "第一章 线性空间",
+      "第二章 线性变换"
+    ]
+  }
+}

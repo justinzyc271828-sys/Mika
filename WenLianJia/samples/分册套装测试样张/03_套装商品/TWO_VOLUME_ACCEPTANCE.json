@@ -1,0 +1,273 @@
+{
+  "book": {
+    "id": "book_4a8a1f9a3f9244e8938d806a5439a529",
+    "code": "LA001",
+    "title": "线性代数",
+    "original_title": "",
+    "authors": [
+      "WenLianJia Test Fixture"
+    ],
+    "translators": [],
+    "publisher": "测试出版社",
+    "edition": "测试版",
+    "publication_year": "",
+    "isbn_10": "",
+    "isbn_13": "",
+    "volumes": 2,
+    "language": "zh-CN",
+    "subject": "mathematics",
+    "cover_image": "",
+    "cover_source_url": "",
+    "source_license": "",
+    "source_verified": false,
+    "verification_status": "NEEDS_REVIEW",
+    "family_id": "",
+    "category_id": "",
+    "template_overrides": {},
+    "status": "ACTIVE",
+    "metadata": {
+      "cover_note": "两册套装验收样张：合成内容，不代表出版社原版教材或真实 AI 解答。",
+      "cover_status": "自主设计，无出版社原版封面"
+    },
+    "created_at": "2026-11-11T05:48:52+00:00",
+    "updated_at": "2026-11-11T05:48:52+00:00"
+  },
+  "productions": {
+    "上册": {
+      "id": "prd_8b954463bc174c73ac4dc7f13534c941",
+      "book_id": "book_4a8a1f9a3f9244e8938d806a5439a529",
+      "volume_label": "上册",
+      "volume_number": 1,
+      "volume_code": "U",
+      "sku": "LA001-U",
+      "title": "线性代数 上册 习题详解（测试样张）",
+      "subject": "mathematics",
+      "source_title": "线性代数 上册（合成测试教材）",
+      "source_author": "WenLianJia Test Fixture",
+      "source_edition": "",
+      "source_path": "D:\\Workspaces\\goods\\WenLianJia\\.tmp_two_volume_test\\01_生产中\\LA001-U_线性代数_上册_习题详解（测试样张）\\00_原始教材\\sample_linear_algebra_upper.pdf",
+      "source_sha256": "01ffb99a31fc2f6d23b3ae705f56a7a02b6cb790e1713af360529f6611e06864",
+      "total_pages": 4,
+      "chapter_count": 2,
+      "exercise_count": 4,
+      "solved_count": 4,
+      "verified_count": 4,
+      "review_required": 0,
+      "status": "packaged",
+      "version": "1.0",
+      "notes": "",
+      "created_at": "2026-11-11T05:48:52+00:00",
+      "updated_at": "2026-11-11T05:49:06+00:00",
+      "metadata": {
+        "cover_note": "两册套装验收样张：合成内容，不代表真实 AI 结果。",
+        "volume_label": "上册"
+      }
+    },
+    "下册": {
+      "id": "prd_390cbef622124f5e816fd4f826b748b0",
+      "book_id": "book_4a8a1f9a3f9244e8938d806a5439a529",
+      "volume_label": "下册",
+      "volume_number": 2,
+      "volume_code": "L",
+      "sku": "LA001-L",
+      "title": "线性代数 下册 习题详解（测试样张）",
+      "subject": "mathematics",
+      "source_title": "线性代数 下册（合成测试教材）",
+      "source_author": "WenLianJia Test Fixture",
+      "source_edition": "",
+      "source_path": "D:\\Workspaces\\goods\\WenLianJia\\.tmp_two_volume_test\\01_生产中\\LA001-L_线性代数_下册_习题详解（测试样张）\\00_原始教材\\sample_linear_algebra_lower.pdf",
+      "source_sha256": "9e25aa804a9bbceb79343c27951958b2bf1387c139d6278f8d82da8f1158a66d",
+      "total_pages": 4,
+      "chapter_count": 2,
+      "exercise_count": 4,
+      "solved_count": 4,
+      "verified_count": 4,
+      "review_required": 0,
+      "status": "packaged",
+      "version": "1.0",
+      "notes": "",
+      "created_at": "2026-11-11T05:49:11+00:00",
+      "updated_at": "2026-11-11T05:49:24+00:00",
+      "metadata": {
+        "cover_note": "两册套装验收样张：合成内容，不代表真实 AI 结果。",
+        "volume_label": "下册"
+      }
+    }
+  },
+  "skus": {
+    "上册": {
+      "id": "sku_ec6f49142d8946a28f31ff2a49b7ce85",
+      "sku_code": "LA001-U",
+      "book_id": "book_4a8a1f9a3f9244e8938d806a5439a529",
+      "name": "线性代数 上册 习题详解",
+      "kind": "single",
+      "items": [
+        {
+          "product_id": "prd_8b954463bc174c73ac4dc7f13534c941",
+          "volume_label": "上册",
+          "edition": "detailed",
+          "sort_order": 0
+        }
+      ],
+      "price_cents": 399,
+      "original_price_cents": 399,
+      "enabled": true,
+      "description": "《线性代数》上册习题答案与详细解析。 上册：4 道习题，2 章，详细解析版 所有解析均经过独立复核流程，PDF 保留原书页码。",
+      "image_dir": "",
+      "status": "draft",
+      "allow_above_parts": false,
+      "family_id": "",
+      "category_id": "",
+      "version_id": "",
+      "lifecycle": "DRAFT",
+      "delivery_status": "NOT_DELIVERED",
+      "primary_product_id": "",
+      "production_status": "",
+      "published_at": "",
+      "paused_at": "",
+      "archived_at": "",
+      "created_at": "2026-11-11T05:49:06+00:00",
+      "updated_at": "2026-11-11T05:49:06+00:00"
+    },
+    "下册": {
+      "id": "sku_da6b320cf59b4f4384c68d8707abda8d",
+      "sku_code": "LA001-L",
+      "book_id": "book_4a8a1f9a3f9244e8938d806a5439a529",
+      "name": "线性代数 下册 习题详解",
+      "kind": "single",
+      "items": [
+        {
+          "product_id": "prd_390cbef622124f5e816fd4f826b748b0",
+          "volume_label": "下册",
+          "edition": "detailed",
+          "sort_order": 0
+        }
+      ],
+      "price_cents": 399,
+      "original_price_cents": 399,
+      "enabled": true,
+      "description": "《线性代数》下册习题答案与详细解析。 下册：4 道习题，2 章，详细解析版 所有解析均经过独立复核流程，PDF 保留原书页码。",
+      "image_dir": "",
+      "status": "draft",
+      "allow_above_parts": false,
+      "family_id": "",
+      "category_id": "",
+      "version_id": "",
+      "lifecycle": "DRAFT",
+      "delivery_status": "NOT_DELIVERED",
+      "primary_product_id": "",
+      "production_status": "",
+      "published_at": "",
+      "paused_at": "",
+      "archived_at": "",
+      "created_at": "2026-11-11T05:49:24+00:00",
+      "updated_at": "2026-11-11T05:49:24+00:00"
+    }
+  },
+  "bundle": {
+    "id": "sku_af80bd6ff703428bb1739fc3f24f8f36",
+    "sku_code": "LA001-B",
+    "book_id": "book_4a8a1f9a3f9244e8938d806a5439a529",
+    "name": "线性代数 上下册 习题详解 套装",
+    "kind": "bundle",
+    "items": [
+      {
+        "product_id": "prd_8b954463bc174c73ac4dc7f13534c941",
+        "volume_label": "上册",
+        "edition": "detailed",
+        "sort_order": 0
+      },
+      {
+        "product_id": "prd_390cbef622124f5e816fd4f826b748b0",
+        "volume_label": "下册",
+        "edition": "detailed",
+        "sort_order": 1
+      }
+    ],
+    "price_cents": 500,
+    "original_price_cents": 798,
+    "enabled": true,
+    "description": "《线性代数》上下册组合套装，包含 2 个独立分册。 上册：4 道习题，2 章，详细解析版；下册：4 道习题，2 章，详细解析版 所有解析均经过独立复核流程，PDF 保留原书页码。 套装原价 ¥7.98，立省 ¥2.98。",
+    "image_dir": "",
+    "status": "draft",
+    "allow_above_parts": false,
+    "family_id": "",
+    "category_id": "",
+    "version_id": "",
+    "lifecycle": "DRAFT",
+    "delivery_status": "NOT_DELIVERED",
+    "primary_product_id": "",
+    "production_status": "",
+    "published_at": "",
+    "paused_at": "",
+    "archived_at": "",
+    "created_at": "2026-11-11T05:49:29+00:00",
+    "updated_at": "2026-11-11T05:49:29+00:00"
+  },
+  "bundle_delivery": [
+    {
+      "name": "LA001-U_线性代数 上册（合成测试教材）_习题详解_v1.0.pdf",
+      "kind": "pdf",
+      "path": "D:\\Workspaces\\goods\\WenLianJia\\.tmp_two_volume_test\\01_生产中\\LA001-U_线性代数_上册_习题详解（测试样张）\\04_最终PDF\\LA001-U_线性代数 上册（合成测试教材）_习题详解_v1.0.pdf",
+      "size": 236147,
+      "sha256": "ec2c09338221bf6343c5413f414972faf4879ac8dfe23fb58b3aa117b6abc54d"
+    },
+    {
+      "name": "LA001-L_线性代数 下册（合成测试教材）_习题详解_v1.0.pdf",
+      "kind": "pdf",
+      "path": "D:\\Workspaces\\goods\\WenLianJia\\.tmp_two_volume_test\\01_生产中\\LA001-L_线性代数_下册_习题详解（测试样张）\\04_最终PDF\\LA001-L_线性代数 下册（合成测试教材）_习题详解_v1.0.pdf",
+      "size": 237101,
+      "sha256": "7388d974d5ee0e4ff530fd07b6d9394db9dec08dc8761856656911ac54fe8a5c"
+    },
+    {
+      "name": "01_商品封面.png",
+      "kind": "product_image",
+      "path": "D:\\Workspaces\\goods\\WenLianJia\\.tmp_two_volume_test\\02_已完成\\01_销售商品\\LA001-B\\01_商品图片\\01_商品封面.png",
+      "size": 99044,
+      "sha256": "9e631f659276f01de8e317551d9b13e79d5127bf0b1c77f814c09528215de99e"
+    },
+    {
+      "name": "02_商品主图.png",
+      "kind": "product_image",
+      "path": "D:\\Workspaces\\goods\\WenLianJia\\.tmp_two_volume_test\\02_已完成\\01_销售商品\\LA001-B\\01_商品图片\\02_商品主图.png",
+      "size": 527826,
+      "sha256": "05b27f69452a045ce60460ebc22d57b747a848d2a23800de432b924f69b5f599"
+    },
+    {
+      "name": "03_内容展示图.png",
+      "kind": "product_image",
+      "path": "D:\\Workspaces\\goods\\WenLianJia\\.tmp_two_volume_test\\02_已完成\\01_销售商品\\LA001-B\\01_商品图片\\03_内容展示图.png",
+      "size": 452814,
+      "sha256": "b333e1d72bc0c01aaebfdc82eff297fb98d57e8195e4aa0c29eac3e91aa6419e"
+    },
+    {
+      "name": "04_商品详情图.png",
+      "kind": "product_image",
+      "path": "D:\\Workspaces\\goods\\WenLianJia\\.tmp_two_volume_test\\02_已完成\\01_销售商品\\LA001-B\\01_商品图片\\04_商品详情图.png",
+      "size": 420658,
+      "sha256": "ea1954e58893a1d839697ace51453fc5e1209d3111354fa1012f68e5c741f3bb"
+    },
+    {
+      "name": "05_商品特色图.png",
+      "kind": "product_image",
+      "path": "D:\\Workspaces\\goods\\WenLianJia\\.tmp_two_volume_test\\02_已完成\\01_销售商品\\LA001-B\\01_商品图片\\05_商品特色图.png",
+      "size": 366159,
+      "sha256": "c1492ea6374c737d5f40f580f68e56030795817f6ecd8821b50adc5a2a404803"
+    },
+    {
+      "name": "06_文件内容说明图.png",
+      "kind": "product_image",
+      "path": "D:\\Workspaces\\goods\\WenLianJia\\.tmp_two_volume_test\\02_已完成\\01_销售商品\\LA001-B\\01_商品图片\\06_文件内容说明图.png",
+      "size": 411989,
+      "sha256": "67cbbd49efc2bcd2f3e71031808d3df5422fed0806894e43f47da983da1ace95"
+    },
+    {
+      "name": "07_品牌宣传图.png",
+      "kind": "product_image",
+      "path": "D:\\Workspaces\\goods\\WenLianJia\\.tmp_two_volume_test\\02_已完成\\01_销售商品\\LA001-B\\01_商品图片\\07_品牌宣传图.png",
+      "size": 90693,
+      "sha256": "b3873a37eb5f8585fe20b525a5b7ca0ae908440f9a318cc1808f8cea941933ba"
+    }
+  ],
+  "note": "合成两册验收样张；未调用 OpenAI、未上传、未创建分享，封面为自主设计。"
+}

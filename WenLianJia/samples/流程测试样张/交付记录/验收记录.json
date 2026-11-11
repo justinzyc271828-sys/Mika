@@ -1,0 +1,54 @@
+{
+  "sku": "PIPE01",
+  "product_id": "prd_b0be6aeecdf1431083aab9119855fd81",
+  "checked_at": "2026-11-11T04:59:11+00:00",
+  "overall": "pending",
+  "checks": [
+    {
+      "name": "完整解析 PDF 已生成",
+      "status": "pass",
+      "evidence": "D:\\Workspaces\\goods\\WenLianJia\\.tmp_pipeline_test\\01_生产中\\PIPE01_线性代数流水线测试\\04_最终PDF\\PIPE01_线性代数测试教材_习题详解_v1.0.pdf"
+    },
+    {
+      "name": "答案速查 PDF 已生成",
+      "status": "pass",
+      "evidence": "D:\\Workspaces\\goods\\WenLianJia\\.tmp_pipeline_test\\01_生产中\\PIPE01_线性代数流水线测试\\04_最终PDF\\PIPE01_线性代数测试教材_答案速查版_v1.0.pdf"
+    },
+    {
+      "name": "商品图片已生成",
+      "status": "pass",
+      "evidence": "7 张"
+    },
+    {
+      "name": "文件哈希已记录",
+      "status": "pass",
+      "evidence": "见 文件清单.json"
+    },
+    {
+      "name": "网盘上传已核对",
+      "status": "pending",
+      "evidence": "0/0 个文件标记为已核对"
+    },
+    {
+      "name": "分享链接已创建",
+      "status": "pending",
+      "evidence": "未配置或未执行百度网盘上传"
+    },
+    {
+      "name": "分享链接已验证",
+      "status": "pending",
+      "evidence": "需要人工验证或平台 API 验证"
+    },
+    {
+      "name": "习题复核",
+      "status": "pass",
+      "detail": "共 8 道，已通过 8 道，待复核 0 道，失败 0 道"
+    },
+    {
+      "name": "水印与排版",
+      "status": "pass",
+      "detail": "D:\\Workspaces\\goods\\WenLianJia\\.tmp_pipeline_test\\01_生产中\\PIPE01_线性代数流水线测试\\04_最终PDF\\PIPE01_线性代数测试教材_习题详解_v1.0.pdf"
+    }
+  ],
+  "note": "自动验收只覆盖本机可核实的项目；分享链接或云端内容未经人工验证时标记为 pending。"
+}

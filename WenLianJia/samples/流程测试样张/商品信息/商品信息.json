@@ -1,0 +1,110 @@
+{
+  "sku": "PIPE01",
+  "title": "线性代数流水线测试",
+  "subject": "mathematics",
+  "source_title": "线性代数测试教材",
+  "source_author": "测试作者",
+  "source_edition": "",
+  "total_pages": 5,
+  "answer_pdf_pages": 12,
+  "chapter_count": 2,
+  "exercise_count": 8,
+  "solved_count": 8,
+  "verified_count": 8,
+  "review_required": 0,
+  "files": [
+    {
+      "name": "PIPE01_线性代数测试教材_习题详解_v1.0.pdf",
+      "path": "D:\\Workspaces\\goods\\WenLianJia\\.tmp_pipeline_test\\01_生产中\\PIPE01_线性代数流水线测试\\04_最终PDF\\PIPE01_线性代数测试教材_习题详解_v1.0.pdf",
+      "relative_path": "04_最终PDF/PIPE01_线性代数测试教材_习题详解_v1.0.pdf",
+      "kind": "pdf_full",
+      "size": 259027,
+      "sha256": "06606c8296d7afb27aba68259e66924d8b534541816103cd8a0da94da28f6081"
+    },
+    {
+      "name": "PIPE01_线性代数测试教材_答案速查版_v1.0.pdf",
+      "path": "D:\\Workspaces\\goods\\WenLianJia\\.tmp_pipeline_test\\01_生产中\\PIPE01_线性代数流水线测试\\04_最终PDF\\PIPE01_线性代数测试教材_答案速查版_v1.0.pdf",
+      "relative_path": "04_最终PDF/PIPE01_线性代数测试教材_答案速查版_v1.0.pdf",
+      "kind": "pdf_quick",
+      "size": 177442,
+      "sha256": "a000ca8ef9359ebd2e8fc7c91979eab764831d47c2155714c2fc9a46f88b4f54"
+    },
+    {
+      "name": "01_商品封面.png",
+      "path": "D:\\Workspaces\\goods\\WenLianJia\\.tmp_pipeline_test\\01_生产中\\PIPE01_线性代数流水线测试\\05_商品图片\\01_商品封面.png",
+      "relative_path": "05_商品图片/01_商品封面.png",
+      "kind": "product_image",
+      "size": 125180,
+      "sha256": "d545a6a1997a08f49491e5a8890caa37b7a5bbb69ef54efe4e1b138e39594b14"
+    },
+    {
+      "name": "02_商品主图.png",
+      "path": "D:\\Workspaces\\goods\\WenLianJia\\.tmp_pipeline_test\\01_生产中\\PIPE01_线性代数流水线测试\\05_商品图片\\02_商品主图.png",
+      "relative_path": "05_商品图片/02_商品主图.png",
+      "kind": "product_image",
+      "size": 439323,
+      "sha256": "632151c6e7e73adecf151740a6bd396d9c77cdf98de9a7fa740071251f2a21d6"
+    },
+    {
+      "name": "03_内容展示图.png",
+      "path": "D:\\Workspaces\\goods\\WenLianJia\\.tmp_pipeline_test\\01_生产中\\PIPE01_线性代数流水线测试\\05_商品图片\\03_内容展示图.png",
+      "relative_path": "05_商品图片/03_内容展示图.png",
+      "kind": "product_image",
+      "size": 194541,
+      "sha256": "e7cf3976a1044cba5a60edbc06ad7736165fc75635df949d76b571709c198c5f"
+    },
+    {
+      "name": "04_商品详情图.png",
+      "path": "D:\\Workspaces\\goods\\WenLianJia\\.tmp_pipeline_test\\01_生产中\\PIPE01_线性代数流水线测试\\05_商品图片\\04_商品详情图.png",
+      "relative_path": "05_商品图片/04_商品详情图.png",
+      "kind": "product_image",
+      "size": 343054,
+      "sha256": "77d1c90bc7a8f4ce51ce7b5bcbd788064e6b3ac2569671041422ae03cf1c2365"
+    },
+    {
+      "name": "05_商品特色图.png",
+      "path": "D:\\Workspaces\\goods\\WenLianJia\\.tmp_pipeline_test\\01_生产中\\PIPE01_线性代数流水线测试\\05_商品图片\\05_商品特色图.png",
+      "relative_path": "05_商品图片/05_商品特色图.png",
+      "kind": "product_image",
+      "size": 124264,
+      "sha256": "851c6e3d84c1ef804233146a368120ede6a7ad459c22511b04ddfa862f25139c"
+    },
+    {
+      "name": "06_文件内容说明图.png",
+      "path": "D:\\Workspaces\\goods\\WenLianJia\\.tmp_pipeline_test\\01_生产中\\PIPE01_线性代数流水线测试\\05_商品图片\\06_文件内容说明图.png",
+      "relative_path": "05_商品图片/06_文件内容说明图.png",
+      "kind": "product_image",
+      "size": 342697,
+      "sha256": "6124f2345876980537a197d462d39ff4c08eb8a5f3fe2ef56b07ed1909652e2c"
+    },
+    {
+      "name": "07_品牌宣传图.png",
+      "path": "D:\\Workspaces\\goods\\WenLianJia\\.tmp_pipeline_test\\01_生产中\\PIPE01_线性代数流水线测试\\05_商品图片\\07_品牌宣传图.png",
+      "relative_path": "05_商品图片/07_品牌宣传图.png",
+      "kind": "product_image",
+      "size": 100630,
+      "sha256": "c9a006eb27302e8cc3dfc73284e7ef814a9b881b2f3a8269fe6272a8194b6d55"
+    }
+  ],
+  "images": [
+    "01_商品封面.png",
+    "02_商品主图.png",
+    "03_内容展示图.png",
+    "04_商品详情图.png",
+    "05_商品特色图.png",
+    "06_文件内容说明图.png",
+    "07_品牌宣传图.png"
+  ],
+  "usage": {
+    "calls": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "estimated_cost": 0,
+    "cost_known": true
+  },
+  "share": null,
+  "uploads": [],
+  "created_at": "2026-11-11T04:58:57+00:00",
+  "generated_at": "2026-11-11T04:59:11+00:00",
+  "version": "1.0"
+}

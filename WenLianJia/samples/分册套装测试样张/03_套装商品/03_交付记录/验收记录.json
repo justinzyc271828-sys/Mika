@@ -1,0 +1,37 @@
+{
+  "sku_code": "LA001-B",
+  "checked_at": "2026-11-11T05:49:35+00:00",
+  "checks": [
+    {
+      "id": "pdfs",
+      "label": "每个分册都有最终 PDF",
+      "status": "passed"
+    },
+    {
+      "id": "images",
+      "label": "SKU 独立商品图片（7 张）",
+      "status": "passed"
+    },
+    {
+      "id": "volume_identity",
+      "label": "套装含两个及以上分册且不重复",
+      "status": "passed"
+    },
+    {
+      "id": "price",
+      "label": "价格合法（人民币两位小数）",
+      "status": "passed"
+    },
+    {
+      "id": "cover",
+      "label": "原版封面已核实或明确使用自主设计封面",
+      "status": "warning"
+    },
+    {
+      "id": "cloud",
+      "label": "云端上传与分享",
+      "status": "pending"
+    }
+  ],
+  "overall": "needs_review"
+}

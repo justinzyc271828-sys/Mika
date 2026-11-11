@@ -182,6 +182,13 @@ Thanks to everyone who has helped build Mika:
   <img src="https://contrib.rocks/image?repo=wangzan101/Mika&max=100&columns=12" alt="Contributors" />
 </a>
 
+## Companion desktop tools
+
+- [WenLianJia](WenLianJia/README.md) — Windows desktop pipeline for turning
+  textbook PDFs into reviewed exercise-solution products, with a PySide6 GUI,
+  SQLite job records, XeLaTeX output and optional netdisk delivery. It runs on
+  the PC and is separate from Mika's phone automation.
+
 ## License
 
 [Apache-2.0](LICENSE) · [NOTICE](NOTICE) · [Third-party components](licenses/THIRD_PARTY_NOTICES.md)

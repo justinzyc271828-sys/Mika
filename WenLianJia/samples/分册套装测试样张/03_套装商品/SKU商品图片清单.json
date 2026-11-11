@@ -1,0 +1,42 @@
+{
+  "sku_code": "LA001-B",
+  "name": "线性代数 上下册 习题详解 套装",
+  "book_code": "LA001",
+  "book_title": "线性代数",
+  "volume_labels": [
+    "上册",
+    "下册"
+  ],
+  "price": "5.00",
+  "generated_at": "2026-11-11T05:49:35+00:00",
+  "mode": "local_design",
+  "source_cover": "",
+  "source_cover_verified": false,
+  "files": [
+    "01_商品封面.png",
+    "02_商品主图.png",
+    "03_内容展示图.png",
+    "04_商品详情图.png",
+    "05_商品特色图.png",
+    "06_文件内容说明图.png",
+    "07_品牌宣传图.png"
+  ],
+  "stats": {
+    "volumes": 2,
+    "total": 8,
+    "verified": 8,
+    "chapters": 4,
+    "volume_labels": [
+      "上册",
+      "下册"
+    ],
+    "volume_counts": [
+      4,
+      4
+    ],
+    "volume_chapters": [
+      2,
+      2
+    ]
+  }
+}
